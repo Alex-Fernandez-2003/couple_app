@@ -23,14 +23,14 @@ PROVIDER="claude"
 #   FILE_PATTERNS="*.ts,*.tsx"
 #   FILE_PATTERNS="*.py"
 #   FILE_PATTERNS="*.go,*.mod"
-FILE_PATTERNS="*.ts,*.tsx,*.js,*.jsx"
+FILE_PATTERNS="*.ts,*.tsx,*.js,*.jsx,*.dart,pubspec.yaml,android/*.gradle,android/*.gradle.kts,android/app/*.gradle,android/app/*.gradle.kts,android/settings.gradle,android/settings.gradle.kts,android/gradle.properties,*.sql"
 
 # File patterns to exclude from review (comma-separated)
 # Default: none
 # Examples:
 #   EXCLUDE_PATTERNS="*.test.ts,*.spec.ts"
 #   EXCLUDE_PATTERNS="*_test.go,*.mock.ts"
-EXCLUDE_PATTERNS="*.test.ts,*.spec.ts,*.test.tsx,*.spec.tsx,*.d.ts"
+EXCLUDE_PATTERNS="*.test.ts,*.spec.ts,*.test.tsx,*.spec.tsx,*.d.ts,build/**,.dart_tool/**,android/build/**,android/app/build/**,ios/build/**,**/*.g.dart,**/*.freezed.dart,**/*.mocks.dart,**/*.gen.dart,**/generated_plugin_registrant.dart"
 
 # File containing code review rules
 # Default: AGENTS.md
