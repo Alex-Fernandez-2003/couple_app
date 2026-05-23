@@ -26,6 +26,10 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Selecciona una foto para personalizar tu pantalla de pareja.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Graba audios para guardarlos localmente en tus notas.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
