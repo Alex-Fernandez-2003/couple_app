@@ -265,13 +265,23 @@ class _BoxesScreenState extends ConsumerState<BoxesScreen>
             ? 'Nueva plantilla de materiales'
             : 'Editar plantilla de materiales',
         initialTitle: template?.title,
-        onSave: (title) async {
+        initialKind: template?.kind,
+        initialItems: template?.items ?? const [],
+        onSave: (values) async {
           final notifier = ref.read(boxesProvider.notifier);
           if (template == null) {
-            await notifier.addMaterialTemplate(title);
+            await notifier.addMaterialTemplate(
+              values.title,
+              kind: values.kind,
+              items: values.items,
+            );
           } else {
             await notifier.updateMaterialTemplate(
-              template.copyWith(title: title),
+              template.copyWith(
+                title: values.title,
+                kind: values.kind,
+                items: values.items,
+              ),
             );
           }
         },
@@ -503,12 +513,15 @@ class _MaterialTemplatesTab extends StatelessWidget {
         final template = templates[index];
         return _BoxCard(
           title: template.title,
-          description: 'Grupo reutilizable de materiales',
+          description: _materialTemplateKindLabel(template),
           items: template.items,
           createdAt: template.createdAt,
           emptyMessage: 'Agrega materiales para reutilizar este grupo.',
           onEdit: () => onEdit(template),
           onDelete: () => onDelete(template),
+          showAddItem:
+              template.kind == MaterialTemplateKind.group ||
+              template.items.isEmpty,
           onAddItem: () => onAddItem(template),
           onEditItem: (item) => onEditItem(template, item),
           onDeleteItem: (itemIndex) => onDeleteItem(template, itemIndex),
@@ -530,6 +543,7 @@ class _BoxCard extends StatelessWidget {
     required this.onAddItem,
     required this.onEditItem,
     required this.onDeleteItem,
+    this.showAddItem = true,
     this.onToggleItem,
     this.onUse,
     this.onInsertMaterials,
@@ -545,6 +559,7 @@ class _BoxCard extends StatelessWidget {
   final VoidCallback onAddItem;
   final ValueChanged<MaterialItem> onEditItem;
   final void Function(int index) onDeleteItem;
+  final bool showAddItem;
   final ValueChanged<MaterialItem>? onToggleItem;
   final VoidCallback? onUse;
   final VoidCallback? onInsertMaterials;
@@ -616,11 +631,12 @@ class _BoxCard extends StatelessWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                TextButton.icon(
-                  onPressed: onAddItem,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Agregar material'),
-                ),
+                if (showAddItem)
+                  TextButton.icon(
+                    onPressed: onAddItem,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Agregar material'),
+                  ),
                 if (onInsertMaterials != null)
                   TextButton.icon(
                     onPressed: onInsertMaterials,
@@ -798,7 +814,7 @@ class _BoxDetailsDialogState extends State<_BoxDetailsDialog> {
                   contentPadding: EdgeInsets.zero,
                   dense: true,
                   title: Text(template.title),
-                  subtitle: Text('${template.items.length} materiales'),
+                  subtitle: Text(_materialTemplateSubtitle(template)),
                   activeColor: const Color(0xFFFD8392),
                   onChanged: (selected) {
                     setState(() {
@@ -849,11 +865,15 @@ class _MaterialTemplateDialog extends StatefulWidget {
     required this.title,
     required this.onSave,
     this.initialTitle,
+    this.initialKind,
+    this.initialItems = const [],
   });
 
   final String title;
   final String? initialTitle;
-  final Future<void> Function(String title) onSave;
+  final MaterialTemplateKind? initialKind;
+  final List<MaterialItem> initialItems;
+  final Future<void> Function(_MaterialTemplateValues values) onSave;
 
   @override
   State<_MaterialTemplateDialog> createState() =>
@@ -862,27 +882,48 @@ class _MaterialTemplateDialog extends StatefulWidget {
 
 class _MaterialTemplateDialogState extends State<_MaterialTemplateDialog> {
   late final TextEditingController _controller;
+  late final TextEditingController _materialController;
+  late MaterialTemplateKind _kind;
   bool _saving = false;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.initialTitle);
+    _materialController = TextEditingController(
+      text: widget.initialItems.isEmpty
+          ? null
+          : widget.initialItems.first.title,
+    );
+    _kind = widget.initialKind ?? MaterialTemplateKind.group;
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _materialController.dispose();
     super.dispose();
   }
 
   Future<void> _save() async {
     final title = _controller.text.trim();
     if (title.isEmpty) return;
+    final materialTitle = _materialController.text.trim();
+    if (_kind == MaterialTemplateKind.individual && materialTitle.isEmpty) {
+      return;
+    }
 
     setState(() => _saving = true);
     try {
-      await widget.onSave(title);
+      await widget.onSave(
+        _MaterialTemplateValues(
+          title: title,
+          kind: _kind,
+          items: _kind == MaterialTemplateKind.individual
+              ? [MaterialItem.create(materialTitle)]
+              : widget.initialItems,
+        ),
+      );
       if (mounted) Navigator.of(context).pop();
     } catch (error) {
       if (mounted) {
@@ -899,13 +940,51 @@ class _MaterialTemplateDialogState extends State<_MaterialTemplateDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(widget.title),
-      content: TextField(
-        controller: _controller,
-        decoration: const InputDecoration(
-          labelText: 'Nombre',
-          hintText: 'Odontología básica, viaje, manualidades...',
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _controller,
+              decoration: const InputDecoration(
+                labelText: 'Nombre',
+                hintText: 'Odontología básica, viaje, manualidades...',
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 16),
+            SegmentedButton<MaterialTemplateKind>(
+              segments: const [
+                ButtonSegment(
+                  value: MaterialTemplateKind.individual,
+                  label: Text('Individual'),
+                  icon: Icon(Icons.check),
+                ),
+                ButtonSegment(
+                  value: MaterialTemplateKind.group,
+                  label: Text('Grupo'),
+                  icon: Icon(Icons.checklist),
+                ),
+              ],
+              selected: {_kind},
+              onSelectionChanged: (selection) {
+                setState(() {
+                  _kind = selection.single;
+                });
+              },
+            ),
+            if (_kind == MaterialTemplateKind.individual) ...[
+              const SizedBox(height: 16),
+              TextField(
+                controller: _materialController,
+                decoration: const InputDecoration(
+                  labelText: 'Material',
+                  hintText: 'Guantes, cinta, tijeras...',
+                ),
+              ),
+            ],
+          ],
         ),
-        autofocus: true,
       ),
       actions: [
         TextButton(
@@ -919,6 +998,18 @@ class _MaterialTemplateDialogState extends State<_MaterialTemplateDialog> {
       ],
     );
   }
+}
+
+class _MaterialTemplateValues {
+  final String title;
+  final MaterialTemplateKind kind;
+  final List<MaterialItem> items;
+
+  const _MaterialTemplateValues({
+    required this.title,
+    required this.kind,
+    required this.items,
+  });
 }
 
 class _InsertMaterialTemplatesDialog extends StatefulWidget {
@@ -984,7 +1075,7 @@ class _InsertMaterialTemplatesDialogState
                     value: _selectedIds.contains(template.id),
                     contentPadding: EdgeInsets.zero,
                     title: Text(template.title),
-                    subtitle: Text('${template.items.length} materiales'),
+                    subtitle: Text(_materialTemplateSubtitle(template)),
                     activeColor: const Color(0xFFFD8392),
                     onChanged: (selected) {
                       setState(() {
@@ -1217,4 +1308,21 @@ String _formatDate(DateTime date) {
   } else {
     return '${date.day}/${date.month}/${date.year}';
   }
+}
+
+String _materialTemplateKindLabel(MaterialTemplate template) {
+  return template.kind == MaterialTemplateKind.individual
+      ? 'Material individual'
+      : 'Grupo reutilizable de materiales';
+}
+
+String _materialTemplateSubtitle(MaterialTemplate template) {
+  final count = template.items.length;
+  if (template.kind == MaterialTemplateKind.individual) {
+    final material = template.items.isEmpty
+        ? 'Sin material'
+        : template.items.first.title;
+    return 'Individual • $material';
+  }
+  return count == 1 ? 'Grupo • 1 material' : 'Grupo • $count materiales';
 }

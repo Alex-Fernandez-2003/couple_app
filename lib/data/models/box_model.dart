@@ -191,9 +191,12 @@ class BoxTemplate {
   }
 }
 
+enum MaterialTemplateKind { individual, group }
+
 class MaterialTemplate {
   final String id;
   final String title;
+  final MaterialTemplateKind kind;
   final List<MaterialItem> items;
   final DateTime createdAt;
   final DateTime updatedAt;
@@ -201,16 +204,25 @@ class MaterialTemplate {
   const MaterialTemplate({
     required this.id,
     required this.title,
+    required this.kind,
     required this.items,
     required this.createdAt,
     required this.updatedAt,
   });
 
   factory MaterialTemplate.fromMap(Map<String, dynamic> map) {
+    final items = _parseMaterialItems(map['items']);
+    final rawKind = map['kind'] as String?;
     return MaterialTemplate(
       id: map['id'] as String,
       title: map['title'] as String,
-      items: _parseMaterialItems(map['items']),
+      kind: MaterialTemplateKind.values.firstWhere(
+        (kind) => kind.name == rawKind,
+        orElse: () => items.length <= 1
+            ? MaterialTemplateKind.individual
+            : MaterialTemplateKind.group,
+      ),
+      items: items,
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),
     );
@@ -220,6 +232,7 @@ class MaterialTemplate {
     return {
       'id': id,
       'title': title,
+      'kind': kind.name,
       'items': items.map((item) => item.toMap()).toList(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
@@ -229,6 +242,7 @@ class MaterialTemplate {
   MaterialTemplate copyWith({
     String? id,
     String? title,
+    MaterialTemplateKind? kind,
     List<MaterialItem>? items,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -236,6 +250,7 @@ class MaterialTemplate {
     return MaterialTemplate(
       id: id ?? this.id,
       title: title ?? this.title,
+      kind: kind ?? this.kind,
       items: items ?? this.items,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

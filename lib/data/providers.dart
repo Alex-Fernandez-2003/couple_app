@@ -1023,12 +1023,19 @@ class BoxesNotifier extends StateNotifier<AsyncValue<BoxesState>> {
     await updateTemplate(template.copyWith(items: items));
   }
 
-  Future<void> addMaterialTemplate(String title) async {
+  Future<void> addMaterialTemplate(
+    String title, {
+    MaterialTemplateKind kind = MaterialTemplateKind.group,
+    List<MaterialItem> items = const [],
+  }) async {
     final now = DateTime.now();
     final template = MaterialTemplate(
       id: const Uuid().v4(),
       title: title,
-      items: const [],
+      kind: kind,
+      items: kind == MaterialTemplateKind.individual && items.length > 1
+          ? [items.first]
+          : items,
       createdAt: now,
       updatedAt: now,
     );
@@ -1061,7 +1068,11 @@ class BoxesNotifier extends StateNotifier<AsyncValue<BoxesState>> {
       (template) => template.id == templateId,
     );
     await updateMaterialTemplate(
-      template.copyWith(items: [...template.items, MaterialItem.create(item)]),
+      template.kind == MaterialTemplateKind.individual
+          ? template.copyWith(items: [MaterialItem.create(item)])
+          : template.copyWith(
+              items: [...template.items, MaterialItem.create(item)],
+            ),
     );
   }
 
