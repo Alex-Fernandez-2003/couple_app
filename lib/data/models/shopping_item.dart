@@ -82,6 +82,7 @@ class ShoppingTemplate {
   final String? notes;
   final double? price;
   final String? category;
+  final String? categoryId;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -91,6 +92,7 @@ class ShoppingTemplate {
     this.notes,
     this.price,
     this.category,
+    this.categoryId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -103,6 +105,7 @@ class ShoppingTemplate {
       notes: map['notes'] as String?,
       price: priceValue is num ? priceValue.toDouble() : null,
       category: map['category'] as String?,
+      categoryId: map['categoryId'] as String?,
       createdAt: _parseDateTime(map['createdAt']),
       updatedAt: _parseDateTime(map['updatedAt']),
     );
@@ -115,6 +118,7 @@ class ShoppingTemplate {
       'notes': notes,
       'price': price,
       'category': category,
+      'categoryId': categoryId,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
     };
@@ -126,6 +130,8 @@ class ShoppingTemplate {
     String? notes,
     double? price,
     String? category,
+    String? categoryId,
+    bool clearCategory = false,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -134,7 +140,8 @@ class ShoppingTemplate {
       title: title ?? this.title,
       notes: notes ?? this.notes,
       price: price ?? this.price,
-      category: category ?? this.category,
+      category: clearCategory ? null : category ?? this.category,
+      categoryId: clearCategory ? null : categoryId ?? this.categoryId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
@@ -148,7 +155,7 @@ class ShoppingTemplate {
       notes: notes,
       price: price,
       category: category,
-      categoryId: null,
+      categoryId: categoryId,
       completed: false,
       createdAt: now,
       updatedAt: now,

@@ -1235,7 +1235,7 @@ class ShoppingNotifier extends StateNotifier<AsyncValue<ShoppingState>> {
     String title, {
     String? notes,
     double? price,
-    String? category,
+    String? categoryId,
   }) async {
     final now = DateTime.now();
     final template = ShoppingTemplate(
@@ -1243,7 +1243,7 @@ class ShoppingNotifier extends StateNotifier<AsyncValue<ShoppingState>> {
       title: title,
       notes: notes,
       price: price,
-      category: category,
+      categoryId: categoryId,
       createdAt: now,
       updatedAt: now,
     );
@@ -1284,17 +1284,24 @@ class ShoppingNotifier extends StateNotifier<AsyncValue<ShoppingState>> {
               : item,
         )
         .toList();
+    final templates = current.templates
+        .map(
+          (template) => template.categoryId == categoryId
+              ? template.copyWith(
+                  clearCategory: true,
+                  updatedAt: DateTime.now(),
+                )
+              : template,
+        )
+        .toList();
 
     final previous = current;
     state = AsyncValue.data(
-      ShoppingState(
-        items: items,
-        templates: current.templates,
-        categories: categories,
-      ),
+      ShoppingState(items: items, templates: templates, categories: categories),
     );
     try {
       await LocalStorageService.saveShoppingItems(items);
+      await LocalStorageService.saveShoppingTemplates(templates);
       await LocalStorageService.saveShoppingCategories(categories);
     } catch (error, stackTrace) {
       state = AsyncValue.data(previous);

@@ -70,6 +70,7 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen>
             ),
             _TemplatesTab(
               templates: state.templates,
+              categories: state.categories,
               onAdd: () => _showTemplateDialog(context),
               onEdit: (template) =>
                   _showTemplateDialog(context, template: template),
@@ -141,8 +142,9 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen>
         initialTitle: template?.title,
         initialNotes: template?.notes,
         initialPrice: template?.price,
-        initialCategory: template?.category,
-        categories: const [],
+        initialCategoryId: template?.categoryId,
+        categories: ref.read(shoppingProvider).value?.categories ?? const [],
+        forceCategorySelector: true,
         onSave: (values) async {
           final notifier = ref.read(shoppingProvider.notifier);
           if (template == null) {
@@ -150,7 +152,7 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen>
               values.title,
               notes: values.notes,
               price: values.price,
-              category: values.legacyCategory,
+              categoryId: values.categoryId,
             );
           } else {
             await notifier.updateTemplate(
@@ -158,7 +160,8 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen>
                 title: values.title,
                 notes: values.notes,
                 price: values.price,
-                category: values.legacyCategory,
+                categoryId: values.categoryId,
+                clearCategory: values.categoryId == null,
               ),
             );
           }
@@ -263,6 +266,7 @@ class _ItemsTab extends StatelessWidget {
 class _TemplatesTab extends StatelessWidget {
   const _TemplatesTab({
     required this.templates,
+    required this.categories,
     required this.onAdd,
     required this.onEdit,
     required this.onUse,
@@ -270,6 +274,7 @@ class _TemplatesTab extends StatelessWidget {
   });
 
   final List<ShoppingTemplate> templates;
+  final List<ShoppingCategory> categories;
   final VoidCallback onAdd;
   final ValueChanged<ShoppingTemplate> onEdit;
   final ValueChanged<ShoppingTemplate> onUse;
@@ -292,8 +297,15 @@ class _TemplatesTab extends StatelessWidget {
       itemCount: templates.length,
       itemBuilder: (context, index) {
         final template = templates[index];
+        final categoryById = {
+          for (final category in categories) category.id: category,
+        };
+        final categoryName = template.categoryId == null
+            ? template.category
+            : categoryById[template.categoryId]?.name;
         return _ShoppingTemplateCard(
           template: template,
+          categoryName: categoryName,
           onUse: () => onUse(template),
           onEdit: () => onEdit(template),
           onDelete: () => onDelete(template),
@@ -363,12 +375,14 @@ class _ShoppingItemCard extends StatelessWidget {
 class _ShoppingTemplateCard extends StatelessWidget {
   const _ShoppingTemplateCard({
     required this.template,
+    this.categoryName,
     required this.onUse,
     required this.onEdit,
     required this.onDelete,
   });
 
   final ShoppingTemplate template;
+  final String? categoryName;
   final VoidCallback onUse;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
@@ -383,7 +397,7 @@ class _ShoppingTemplateCard extends StatelessWidget {
         subtitle: _ShoppingMetadata(
           notes: template.notes,
           price: template.price,
-          category: template.category,
+          category: categoryName,
         ),
         trailing: Wrap(
           spacing: 4,
@@ -661,18 +675,18 @@ class _ShoppingEntryDialog extends StatefulWidget {
     this.initialTitle,
     this.initialNotes,
     this.initialPrice,
-    this.initialCategory,
     this.initialCategoryId,
     this.categories = const [],
+    this.forceCategorySelector = false,
   });
 
   final String title;
   final String? initialTitle;
   final String? initialNotes;
   final double? initialPrice;
-  final String? initialCategory;
   final String? initialCategoryId;
   final List<ShoppingCategory> categories;
+  final bool forceCategorySelector;
   final Future<void> Function(_ShoppingEntryValues values) onSave;
 
   @override
@@ -695,7 +709,7 @@ class _ShoppingEntryDialogState extends State<_ShoppingEntryDialog> {
     _priceController = TextEditingController(
       text: widget.initialPrice?.toStringAsFixed(2),
     );
-    _categoryController = TextEditingController(text: widget.initialCategory);
+    _categoryController = TextEditingController();
     _categoryId = widget.initialCategoryId;
   }
 
@@ -778,7 +792,7 @@ class _ShoppingEntryDialogState extends State<_ShoppingEntryDialog> {
               ),
             ),
             const SizedBox(height: 16),
-            if (widget.categories.isEmpty)
+            if (widget.categories.isEmpty && !widget.forceCategorySelector)
               TextField(
                 controller: _categoryController,
                 decoration: const InputDecoration(
