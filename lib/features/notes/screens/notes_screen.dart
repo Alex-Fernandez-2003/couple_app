@@ -551,35 +551,16 @@ class _NoteAttachmentsDialogState
   }
 
   Future<void> _renameAudioAttachment(NoteAudioAttachment attachment) async {
-    final controller = TextEditingController(
-      text: attachment.customName ?? _basename(attachment.path),
-    );
     final name = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => _AttachmentRenameDialog(
         title: const Text('Renombrar audio'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Nombre',
-            hintText: 'Repaso periodoncia...',
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('Guardar'),
-          ),
-        ],
+        initialName: attachment.customName ?? _basename(attachment.path),
+        hintText: 'Repaso periodoncia...',
       ),
     );
-    controller.dispose();
     if (name == null) return;
+    if (!mounted) return;
     await ref
         .read(notesProvider.notifier)
         .renameAudioAttachment(
@@ -597,33 +578,16 @@ class _NoteAttachmentsDialogState
   }
 
   Future<void> _renameFileAttachment(NoteFileAttachment attachment) async {
-    final controller = TextEditingController(text: attachment.name);
     final name = await showDialog<String>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => _AttachmentRenameDialog(
         title: const Text('Renombrar archivo'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Nombre',
-            hintText: 'Radiología clase 3.pdf',
-          ),
-          autofocus: true,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(controller.text.trim()),
-            child: const Text('Guardar'),
-          ),
-        ],
+        initialName: attachment.name,
+        hintText: 'Radiología clase 3.pdf',
       ),
     );
-    controller.dispose();
     if (name == null || name.isEmpty) return;
+    if (!mounted) return;
     await ref
         .read(notesProvider.notifier)
         .renameFileAttachment(widget.noteId, attachment.id, name);
@@ -1008,6 +972,71 @@ class _FileAttachmentPreview extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(icon, color: color ?? const Color(0xFFFD8392)),
+    );
+  }
+}
+
+class _AttachmentRenameDialog extends StatefulWidget {
+  const _AttachmentRenameDialog({
+    required this.title,
+    required this.initialName,
+    required this.hintText,
+  });
+
+  final Widget title;
+  final String initialName;
+  final String hintText;
+
+  @override
+  State<_AttachmentRenameDialog> createState() =>
+      _AttachmentRenameDialogState();
+}
+
+class _AttachmentRenameDialogState extends State<_AttachmentRenameDialog> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName);
+    _focusNode = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _close([String? value]) {
+    _focusNode.unfocus();
+    Navigator.of(context).pop(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: widget.title,
+      content: TextField(
+        controller: _controller,
+        focusNode: _focusNode,
+        decoration: InputDecoration(
+          labelText: 'Nombre',
+          hintText: widget.hintText,
+        ),
+        autofocus: true,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => _close(_controller.text.trim()),
+      ),
+      actions: [
+        TextButton(onPressed: _close, child: const Text('Cancelar')),
+        ElevatedButton(
+          onPressed: () => _close(_controller.text.trim()),
+          child: const Text('Guardar'),
+        ),
+      ],
     );
   }
 }
