@@ -9,6 +9,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:record/record.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:uuid/uuid.dart';
 import '../../../data/models/note.dart';
 import '../../../data/providers.dart';
@@ -540,6 +541,15 @@ class _NoteAttachmentsDialogState
         .deleteAudioAttachment(widget.noteId, attachment.id);
   }
 
+  Future<void> _shareAudioAttachment(NoteAudioAttachment attachment) async {
+    final name = attachment.customName ?? _basename(attachment.path);
+    await _shareLocalFile(
+      path: attachment.path,
+      name: name,
+      mimeType: _mimeTypeForPath(attachment.path, fallback: 'audio/*'),
+    );
+  }
+
   Future<void> _renameAudioAttachment(NoteAudioAttachment attachment) async {
     final controller = TextEditingController(
       text: attachment.customName ?? _basename(attachment.path),
@@ -623,6 +633,38 @@ class _NoteAttachmentsDialogState
     await ref
         .read(notesProvider.notifier)
         .deleteFileAttachment(widget.noteId, attachment.id);
+  }
+
+  Future<void> _shareFileAttachment(NoteFileAttachment attachment) async {
+    await _shareLocalFile(
+      path: attachment.path,
+      name: attachment.name,
+      mimeType: _mimeTypeForFileAttachment(attachment),
+    );
+  }
+
+  Future<void> _shareLocalFile({
+    required String path,
+    required String name,
+    String? mimeType,
+  }) async {
+    final file = File(path);
+    if (!await file.exists()) {
+      _showSnack('No se encontró el archivo para compartir.');
+      return;
+    }
+
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          title: name,
+          files: [XFile(path, name: name, mimeType: mimeType)],
+          fileNameOverrides: [name],
+        ),
+      );
+    } catch (error) {
+      _showSnack('No se pudo compartir el archivo: $error');
+    }
   }
 
   Future<Duration?> _readAudioDuration(String path) async {
@@ -809,6 +851,7 @@ class _NoteAttachmentsDialogState
                               onSeek: isActive ? _seekActive : null,
                               onSpeedChanged: _setSpeed,
                               onOpenExternal: () => _openExternally(attachment),
+                              onShare: () => _shareAudioAttachment(attachment),
                               onRename: () =>
                                   _renameAudioAttachment(attachment),
                               onDelete: () =>
@@ -823,6 +866,7 @@ class _NoteAttachmentsDialogState
                         _FileAttachmentTile(
                           attachment: attachment,
                           onOpen: () => _openFileAttachment(attachment),
+                          onShare: () => _shareFileAttachment(attachment),
                           onRename: () => _renameFileAttachment(attachment),
                           onDelete: () => _deleteFileAttachment(attachment),
                         ),
@@ -868,12 +912,14 @@ class _FileAttachmentTile extends StatelessWidget {
   const _FileAttachmentTile({
     required this.attachment,
     required this.onOpen,
+    required this.onShare,
     required this.onRename,
     required this.onDelete,
   });
 
   final NoteFileAttachment attachment;
   final VoidCallback onOpen;
+  final VoidCallback onShare;
   final VoidCallback onRename;
   final VoidCallback onDelete;
 
@@ -896,16 +942,28 @@ class _FileAttachmentTile extends StatelessWidget {
           overflow: TextOverflow.ellipsis,
         ),
         onTap: onOpen,
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            if (value == 'open') onOpen();
-            if (value == 'rename') onRename();
-            if (value == 'delete') onDelete();
-          },
-          itemBuilder: (context) => const [
-            PopupMenuItem(value: 'open', child: Text('Abrir')),
-            PopupMenuItem(value: 'rename', child: Text('Renombrar')),
-            PopupMenuItem(value: 'delete', child: Text('Eliminar')),
+        trailing: Wrap(
+          spacing: 2,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.ios_share_outlined),
+              tooltip: 'Compartir',
+              onPressed: onShare,
+            ),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'open') onOpen();
+                if (value == 'share') onShare();
+                if (value == 'rename') onRename();
+                if (value == 'delete') onDelete();
+              },
+              itemBuilder: (context) => const [
+                PopupMenuItem(value: 'open', child: Text('Abrir')),
+                PopupMenuItem(value: 'share', child: Text('Compartir')),
+                PopupMenuItem(value: 'rename', child: Text('Renombrar')),
+                PopupMenuItem(value: 'delete', child: Text('Eliminar')),
+              ],
+            ),
           ],
         ),
       ),
@@ -965,6 +1023,7 @@ class _AudioAttachmentTile extends StatelessWidget {
     required this.onPlayPause,
     required this.onSpeedChanged,
     required this.onOpenExternal,
+    required this.onShare,
     required this.onRename,
     required this.onDelete,
     this.onSeek,
@@ -980,6 +1039,7 @@ class _AudioAttachmentTile extends StatelessWidget {
   final ValueChanged<Duration>? onSeek;
   final ValueChanged<double> onSpeedChanged;
   final VoidCallback onOpenExternal;
+  final VoidCallback onShare;
   final VoidCallback onRename;
   final VoidCallback onDelete;
 
@@ -1028,14 +1088,21 @@ class _AudioAttachmentTile extends StatelessWidget {
                     ],
                   ),
                 ),
+                IconButton(
+                  icon: const Icon(Icons.ios_share_outlined),
+                  tooltip: 'Compartir',
+                  onPressed: onShare,
+                ),
                 PopupMenuButton<String>(
                   onSelected: (value) {
                     if (value == 'open') onOpenExternal();
+                    if (value == 'share') onShare();
                     if (value == 'rename') onRename();
                     if (value == 'delete') onDelete();
                   },
                   itemBuilder: (context) => const [
                     PopupMenuItem(value: 'open', child: Text('Abrir externo')),
+                    PopupMenuItem(value: 'share', child: Text('Compartir')),
                     PopupMenuItem(value: 'rename', child: Text('Renombrar')),
                     PopupMenuItem(value: 'delete', child: Text('Eliminar')),
                   ],
@@ -1635,6 +1702,33 @@ String _extension(String path) {
   final index = name.lastIndexOf('.');
   if (index == -1 || index == name.length - 1) return '';
   return name.substring(index + 1).toLowerCase();
+}
+
+String? _mimeTypeForFileAttachment(NoteFileAttachment attachment) {
+  return switch (attachment.type) {
+    NoteFileAttachmentType.image => _mimeTypeForPath(
+      attachment.path,
+      fallback: 'image/*',
+    ),
+    NoteFileAttachmentType.pdf => 'application/pdf',
+  };
+}
+
+String? _mimeTypeForPath(String path, {String? fallback}) {
+  return switch (_extension(path)) {
+    'aac' => 'audio/aac',
+    'm4a' => 'audio/mp4',
+    'mp3' => 'audio/mpeg',
+    'ogg' => 'audio/ogg',
+    'wav' => 'audio/wav',
+    'webm' => 'audio/webm',
+    'heic' => 'image/heic',
+    'jpeg' || 'jpg' => 'image/jpeg',
+    'png' => 'image/png',
+    'webp' => 'image/webp',
+    'pdf' => 'application/pdf',
+    _ => fallback,
+  };
 }
 
 String _formatDuration(Duration duration) {

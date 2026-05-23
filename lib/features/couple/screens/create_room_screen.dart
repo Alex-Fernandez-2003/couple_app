@@ -38,21 +38,20 @@ class CreateRoomScreenState extends ConsumerState<CreateRoomScreen> {
   }
 
   Future<void> _onCreate() async {
-    final code = _inviteCodeController.text.trim();
+    final code = _inviteCodeController.text.trim().toUpperCase();
     if (code.isEmpty) return;
     setState(() {
       _isCreating = true;
     });
     final success = await ref.read(roomStateProvider.notifier).createRoom(code);
+    if (!mounted) return;
     setState(() {
       _isCreating = false;
     });
     if (success) {
-      if (!mounted) return;
       context.go('/couple');
     } else {
       final error = ref.read(roomStateProvider).message;
-      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(error.isEmpty ? 'No se pudo crear la sala' : error),

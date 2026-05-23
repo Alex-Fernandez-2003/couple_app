@@ -6,6 +6,7 @@ import 'package:couple_app/data/providers.dart';
 import 'package:couple_app/data/models/shared_item.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:go_router/go_router.dart';
 import '../widgets/send_message_dialog.dart';
 
 class ParejaScreen extends ConsumerStatefulWidget {
@@ -207,6 +208,37 @@ class _ParejaScreenState extends ConsumerState<ParejaScreen> {
     }
   }
 
+  Future<void> _confirmLeaveRoom(BuildContext context) async {
+    final shouldLeave = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Salir de la sala'),
+        content: const Text(
+          'Esto solo quitará la sala de este dispositivo. No se borrará nada de Supabase.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Salir'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldLeave != true) return;
+    await ref.read(roomStateProvider.notifier).leaveRoom();
+    if (!context.mounted) return;
+    context.go('/');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer(
@@ -227,6 +259,17 @@ class _ParejaScreenState extends ConsumerState<ParejaScreen> {
                 onPressed: _refreshPareja,
                 icon: const Icon(Icons.refresh),
                 tooltip: 'Recargar',
+              ),
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'leave') _confirmLeaveRoom(context);
+                },
+                itemBuilder: (context) => const [
+                  PopupMenuItem(
+                    value: 'leave',
+                    child: Text('Salir de la sala'),
+                  ),
+                ],
               ),
             ],
           ),
@@ -253,6 +296,23 @@ class _ParejaScreenState extends ConsumerState<ParejaScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
+                            if (roomState.message.isNotEmpty) ...[
+                              Card(
+                                color: const Color(
+                                  0xFFFD8392,
+                                ).withValues(alpha: 0.08),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16),
+                                  child: Text(
+                                    roomState.message,
+                                    style: const TextStyle(
+                                      color: Color(0xFF80515A),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                            ],
                             // Placeholder partner info card
                             Card(
                               child: Padding(

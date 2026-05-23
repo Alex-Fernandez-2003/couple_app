@@ -51,12 +51,14 @@ class RoomState {
     String? customMessage,
     DateTime? relationshipStartDate,
     DateTime? periodStartedAt,
+    String message = '',
   }) => RoomState(
     status: RoomStatus.connected,
     room: room,
     customMessage: customMessage ?? room.customMessage,
     relationshipStartDate: relationshipStartDate ?? room.relationshipStartDate,
     periodStartedAt: periodStartedAt ?? room.periodStartedAt,
+    message: message,
   );
 
   factory RoomState.error(String message) =>
@@ -65,11 +67,36 @@ class RoomState {
 
 class RoomNotifier extends StateNotifier<RoomState> {
   RoomNotifier(this.ref) : super(RoomState.initial()) {
-    _loadCachedRelationshipTracker();
+    _restoreCurrentRoom();
   }
 
   final Ref ref;
   StreamSubscription<Room>? _roomSubscription;
+
+  Future<void> _restoreCurrentRoom() async {
+    final cachedSession = await LocalStorageService.getCurrentRoomSession();
+    if (cachedSession == null) {
+      await _loadCachedRelationshipTracker();
+      return;
+    }
+
+    state = RoomState.loading('Recuperando tu espacio de pareja...');
+    try {
+      var room = await SupabaseService.getRoom(cachedSession.roomId);
+      final currentUserId = ref.read(currentUserIdProvider);
+      if (currentUserId != null) {
+        room = await SupabaseService.assignRoomUser(room.id, currentUserId);
+      }
+      await _activateRoom(room, persistSession: true);
+    } catch (error) {
+      debugPrint('Error restoring room session: $error');
+      await _activateCachedRoom(
+        cachedSession.roomId,
+        cachedSession.inviteCode,
+        'No pude actualizar la sala guardada. Te dejo el espacio local mientras vuelve la conexión.',
+      );
+    }
+  }
 
   Future<void> _loadCachedRelationshipTracker() async {
     final relationshipStartDate =
@@ -95,25 +122,7 @@ class RoomNotifier extends StateNotifier<RoomState> {
       if (currentUserId != null) {
         room = await SupabaseService.assignRoomUser(room.id, currentUserId);
       }
-      // Fetch initial custom_message
-      final customMsg = await SupabaseService.getCustomMessage(room.id);
-      // Cache locally
-      await LocalStorageService.setCachedCustomMessage(customMsg);
-      // Update state with custom message
-      state = RoomState.connected(
-        room,
-        customMessage: customMsg,
-        relationshipStartDate:
-            room.relationshipStartDate ??
-            await LocalStorageService.getCachedRelationshipStartDate(),
-        periodStartedAt:
-            room.periodStartedAt ??
-            await LocalStorageService.getCachedPeriodStartedAt(),
-      );
-      // Subscribe to custom_message updates
-      _subscribeToRoom(room.id);
-      // Subscribe to other data
-      await ref.read(sharedItemsProvider.notifier).subscribe(room.id);
+      await _activateRoom(room, persistSession: true);
       return true;
     } catch (error) {
       state = RoomState.error(error.toString());
@@ -129,30 +138,85 @@ class RoomNotifier extends StateNotifier<RoomState> {
       if (currentUserId != null) {
         room = await SupabaseService.assignRoomUser(room.id, currentUserId);
       }
-      // Fetch initial custom_message
-      final customMsg = await SupabaseService.getCustomMessage(room.id);
-      // Cache locally
-      await LocalStorageService.setCachedCustomMessage(customMsg);
-      // Update state with custom message
-      state = RoomState.connected(
-        room,
-        customMessage: customMsg,
-        relationshipStartDate:
-            room.relationshipStartDate ??
-            await LocalStorageService.getCachedRelationshipStartDate(),
-        periodStartedAt:
-            room.periodStartedAt ??
-            await LocalStorageService.getCachedPeriodStartedAt(),
-      );
-      // Subscribe to custom_message updates
-      _subscribeToRoom(room.id);
-      // Subscribe to other data
-      await ref.read(sharedItemsProvider.notifier).subscribe(room.id);
+      await _activateRoom(room, persistSession: true);
       return true;
     } catch (error) {
-      state = RoomState.error(error.toString());
+      state = RoomState.error(
+        _isNoRowsError(error)
+            ? 'No encontré una sala con ese código.'
+            : error.toString(),
+      );
       return false;
     }
+  }
+
+  Future<void> _activateRoom(Room room, {required bool persistSession}) async {
+    final customMsg = await SupabaseService.getCustomMessage(room.id);
+    await LocalStorageService.setCachedCustomMessage(customMsg);
+    await LocalStorageService.setCachedRelationshipStartDate(
+      room.relationshipStartDate,
+    );
+    await LocalStorageService.setCachedPeriodStartedAt(room.periodStartedAt);
+    if (persistSession) {
+      await LocalStorageService.saveCurrentRoomSession(
+        roomId: room.id,
+        inviteCode: room.inviteCode,
+      );
+    }
+
+    state = RoomState.connected(
+      room,
+      customMessage: customMsg,
+      relationshipStartDate:
+          room.relationshipStartDate ??
+          await LocalStorageService.getCachedRelationshipStartDate(),
+      periodStartedAt:
+          room.periodStartedAt ??
+          await LocalStorageService.getCachedPeriodStartedAt(),
+    );
+    _subscribeToRoom(room.id);
+    await ref.read(sharedItemsProvider.notifier).subscribe(room.id);
+  }
+
+  Future<void> _activateCachedRoom(
+    String roomId,
+    String inviteCode,
+    String message,
+  ) async {
+    final cachedCustomMessage =
+        await LocalStorageService.getCachedCustomMessage() ??
+        'Tu espacio de pareja';
+    final relationshipStartDate =
+        await LocalStorageService.getCachedRelationshipStartDate();
+    final periodStartedAt =
+        await LocalStorageService.getCachedPeriodStartedAt();
+    final now = DateTime.now();
+    final room = Room(
+      id: roomId,
+      inviteCode: inviteCode,
+      name: 'Nuestro espacio',
+      createdAt: now,
+      updatedAt: now,
+      customMessage: cachedCustomMessage,
+      relationshipStartDate: relationshipStartDate,
+      periodStartedAt: periodStartedAt,
+    );
+
+    state = RoomState.connected(
+      room,
+      customMessage: cachedCustomMessage,
+      relationshipStartDate: relationshipStartDate,
+      periodStartedAt: periodStartedAt,
+      message: message,
+    );
+  }
+
+  bool _isNoRowsError(Object error) {
+    if (error is PostgrestException) {
+      final message = error.message.toLowerCase();
+      return error.code == 'PGRST116' || message.contains('no rows');
+    }
+    return false;
   }
 
   void _subscribeToRoom(String roomId) {
@@ -183,6 +247,15 @@ class RoomNotifier extends StateNotifier<RoomState> {
       room.relationshipStartDate,
     );
     await LocalStorageService.setCachedPeriodStartedAt(room.periodStartedAt);
+  }
+
+  Future<void> leaveRoom() async {
+    await _roomSubscription?.cancel();
+    _roomSubscription = null;
+    await LocalStorageService.clearCurrentRoomSession();
+    await ref.read(sharedItemsProvider.notifier).clear();
+    state = RoomState.initial();
+    await _loadCachedRelationshipTracker();
   }
 
   Future<void> updateCustomMessage(String roomId, String customMessage) async {
@@ -315,6 +388,12 @@ class SharedItemsNotifier extends StateNotifier<AsyncValue<List<SharedItem>>> {
 
   Future<void> refresh(String roomId) async {
     await subscribe(roomId);
+  }
+
+  Future<void> clear() async {
+    await _subscription?.cancel();
+    _subscription = null;
+    state = const AsyncValue.data([]);
   }
 
   Future<void> addItem(String roomId, String title) async {

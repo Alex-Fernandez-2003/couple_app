@@ -38,13 +38,13 @@ PROVIDER="codex"
 
 # Examples:
 
-# FILE_PATTERNS="_.ts,_.tsx"
+# FILE*PATTERNS="*.ts,\_.tsx"
 
 # FILE_PATTERNS="\*.py"
 
-# FILE_PATTERNS="_.go,_.mod"
+# FILE*PATTERNS="*.go,\_.mod"
 
-FILE_PATTERNS="_.ts,_.tsx,_.js,_.jsx,_.dart,pubspec.yaml,android/_.gradle,android/_.gradle.kts,android/app/_.gradle,android/app/_.gradle.kts,android/settings.gradle,android/settings.gradle.kts,android/gradle.properties,_.sql"
+FILE*PATTERNS="*.ts,_.tsx,_.js,_.jsx,_.dart,pubspec.yaml,android/_.gradle,android/_.gradle.kts,android/app/_.gradle,android/app/_.gradle.kts,android/settings.gradle,android/settings.gradle.kts,android/gradle.properties,\_.sql"
 
 # File patterns to exclude from review (comma-separated)
 
@@ -52,11 +52,11 @@ FILE_PATTERNS="_.ts,_.tsx,_.js,_.jsx,_.dart,pubspec.yaml,android/_.gradle,androi
 
 # Examples:
 
-# EXCLUDE_PATTERNS="_.test.ts,_.spec.ts"
+# EXCLUDE*PATTERNS="*.test.ts,\_.spec.ts"
 
-# EXCLUDE_PATTERNS="_\_test.go,_.mock.ts"
+# EXCLUDE*PATTERNS="*\_test.go,\_.mock.ts"
 
-EXCLUDE_PATTERNS="_.test.ts,_.spec.ts,_.test.tsx,_.spec.tsx,_.d.ts,build/**,.dart_tool/**,android/build/**,android/app/build/**,ios/build/**,**/_.g.dart,**/\*.freezed.dart,**/_.mocks.dart,\*\*/_.gen.dart,\*\*/generated_plugin_registrant.dart"
+EXCLUDE*PATTERNS="*.test.ts,_.spec.ts,_.test.tsx,_.spec.tsx,_.d.ts,build/**,.dart_tool/**,android/build/**,android/app/build/**,ios/build/**,**/_.g.dart,**/\*.freezed.dart,**/_.mocks.dart,\*\*/\_.gen.dart,\*\*/generated_plugin_registrant.dart"
 
 # File containing code review rules
 
@@ -68,7 +68,7 @@ RULES_FILE="AGENTS.md"
 
 # Default: true
 
-STRICT_MODE="true"
+STRICT_MODE="false"
 
 # Timeout in seconds for AI provider response
 

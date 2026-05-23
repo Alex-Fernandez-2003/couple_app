@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../data/providers.dart';
 import '../features/boxes/screens/boxes_screen.dart';
 import '../features/couple/screens/create_room_screen.dart';
 import '../features/couple/screens/join_room_screen.dart';
@@ -50,11 +52,52 @@ final appRouter = GoRouter(
   ],
 );
 
-class OnboardingScreen extends StatelessWidget {
+class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
 
   @override
+  State<OnboardingScreen> createState() => _OnboardingScreenState();
+}
+
+class _OnboardingScreenState extends State<OnboardingScreen> {
+  ProviderSubscription<RoomState>? _roomSubscription;
+  RoomState? _roomState;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_roomSubscription != null) return;
+
+    try {
+      final container = ProviderScope.containerOf(context, listen: false);
+      _roomSubscription = container.listen<RoomState>(roomStateProvider, (
+        previous,
+        next,
+      ) {
+        if (!mounted) return;
+        setState(() => _roomState = next);
+        if (next.status == RoomStatus.connected) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) context.go('/couple');
+          });
+        }
+      }, fireImmediately: true);
+    } catch (_) {
+      // Some widget tests render CoupleApp without the production ProviderScope.
+      // In that case the onboarding remains fully usable without room restore.
+    }
+  }
+
+  @override
+  void dispose() {
+    _roomSubscription?.close();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final roomState = _roomState;
+
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -71,6 +114,39 @@ class OnboardingScreen extends StatelessWidget {
                 'Crea una conexión con tu persona favorita usando un código. Es simple, rápido y sin login.',
                 style: TextStyle(fontSize: 16, height: 1.5),
               ),
+              if (roomState?.status == RoomStatus.waiting) ...[
+                const SizedBox(height: 24),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(child: Text(roomState?.message ?? '')),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+              if (roomState?.status == RoomStatus.error &&
+                  roomState?.message.isNotEmpty == true) ...[
+                const SizedBox(height: 24),
+                Card(
+                  color: Colors.red.shade50,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      roomState?.message ?? '',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  ),
+                ),
+              ],
               const Spacer(),
               ElevatedButton(
                 onPressed: () => context.go('/create-room'),

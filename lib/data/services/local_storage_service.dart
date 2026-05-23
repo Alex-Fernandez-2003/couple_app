@@ -15,6 +15,8 @@ class LocalStorageService {
   static const String _shoppingTemplatesKey = 'shopping_templates_storage';
   static const String _shoppingCategoriesKey = 'shopping_categories_storage';
   static const String _pendingMessagesKey = 'pending_messages';
+  static const String _currentRoomIdKey = 'current_room_id';
+  static const String _currentRoomInviteCodeKey = 'current_room_invite_code';
   static const String _customMessageKey = 'couple_message';
   static const String _relationshipStartDateKey = 'relationship_start_date';
   static const String _periodStartedAtKey = 'period_started_at';
@@ -142,6 +144,37 @@ class LocalStorageService {
     final boxes = await getBoxes();
     boxes.removeWhere((box) => box.id == boxId);
     await saveBoxes(boxes);
+  }
+
+  // ==================== Current Room Session ====================
+
+  static Future<({String roomId, String inviteCode})?>
+  getCurrentRoomSession() async {
+    final prefs = await _prefs;
+    final roomId = prefs.getString(_currentRoomIdKey);
+    final inviteCode = prefs.getString(_currentRoomInviteCodeKey);
+    if (roomId == null ||
+        roomId.isEmpty ||
+        inviteCode == null ||
+        inviteCode.isEmpty) {
+      return null;
+    }
+    return (roomId: roomId, inviteCode: inviteCode);
+  }
+
+  static Future<void> saveCurrentRoomSession({
+    required String roomId,
+    required String inviteCode,
+  }) async {
+    final prefs = await _prefs;
+    await prefs.setString(_currentRoomIdKey, roomId);
+    await prefs.setString(_currentRoomInviteCodeKey, inviteCode);
+  }
+
+  static Future<void> clearCurrentRoomSession() async {
+    final prefs = await _prefs;
+    await prefs.remove(_currentRoomIdKey);
+    await prefs.remove(_currentRoomInviteCodeKey);
   }
 
   // Shopping methods
