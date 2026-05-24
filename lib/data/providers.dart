@@ -1770,6 +1770,188 @@ class StudyNotifier extends StateNotifier<AsyncValue<StudyState>> {
   }
 }
 
+class StudyTimerNotifier extends StateNotifier<StudyTimerState> {
+  StudyTimerNotifier(this.ref) : super(const StudyTimerState()) {
+    _restore();
+  }
+
+  final Ref ref;
+  Timer? _timer;
+  int? _lastNotifiedMinute;
+  bool _completing = false;
+
+  Future<void> _restore() async {
+    final restored = await LocalStorageService.getStudyTimerState();
+    if (restored == null || !restored.hasActiveSession) return;
+    state = restored;
+    if (restored.status == StudyTimerStatus.running) {
+      if (restored.remainingSeconds <= 0) {
+        await _complete(showAlarm: true);
+      } else {
+        _startTicker();
+        await _showActiveNotification();
+        await _scheduleFinishAlarm();
+      }
+      return;
+    }
+    await _showActiveNotification();
+  }
+
+  Future<void> startTimer({
+    required int minutes,
+    StudyGoal? goal,
+    StudyTemplate? template,
+  }) async {
+    _timer?.cancel();
+    final now = DateTime.now();
+    state = StudyTimerState(
+      sessionId: const Uuid().v4(),
+      goalId: goal?.id,
+      templateId: template?.id ?? goal?.templateId,
+      topics: goal?.topics ?? const [],
+      incentive: goal?.incentive,
+      startedAt: now,
+      durationSeconds: minutes * 60,
+      pausedRemainingSeconds: minutes * 60,
+      status: StudyTimerStatus.running,
+    );
+    _lastNotifiedMinute = null;
+    await _persist();
+    _startTicker();
+    await _showActiveNotification();
+    await _scheduleFinishAlarm();
+  }
+
+  Future<void> pause() async {
+    if (state.status != StudyTimerStatus.running) return;
+    final remaining = state.remainingSeconds;
+    _timer?.cancel();
+    state = state.copyWith(
+      pausedRemainingSeconds: remaining,
+      status: StudyTimerStatus.paused,
+    );
+    await _persist();
+    await _showActiveNotification();
+    await StudyNotificationService.cancelTimerFinishedAlarm();
+  }
+
+  Future<void> resume() async {
+    if (state.status != StudyTimerStatus.paused) return;
+    final remaining = state.pausedRemainingSeconds;
+    state = state.copyWith(
+      startedAt: DateTime.now().subtract(
+        Duration(seconds: state.durationSeconds - remaining),
+      ),
+      status: StudyTimerStatus.running,
+    );
+    await _persist();
+    _startTicker();
+    await _showActiveNotification();
+    await _scheduleFinishAlarm();
+  }
+
+  Future<void> togglePause() async {
+    if (state.status == StudyTimerStatus.paused) {
+      await resume();
+    } else {
+      await pause();
+    }
+  }
+
+  Future<void> cancel() async {
+    _timer?.cancel();
+    state = state.copyWith(
+      pausedRemainingSeconds: 0,
+      status: StudyTimerStatus.cancelled,
+    );
+    await _persist();
+    await StudyNotificationService.cancelActiveTimer();
+    await StudyNotificationService.cancelTimerFinishedAlarm();
+  }
+
+  Future<void> completeManually() async {
+    await _complete(showAlarm: false);
+  }
+
+  void _startTicker() {
+    _timer?.cancel();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) async {
+      if (state.status != StudyTimerStatus.running) return;
+      final remaining = state.remainingSeconds;
+      if (remaining <= 0) {
+        await _complete(showAlarm: true);
+        return;
+      }
+      state = state.copyWith(pausedRemainingSeconds: remaining);
+      final minute = (remaining / 60).ceil();
+      if (_lastNotifiedMinute != minute) {
+        await _showActiveNotification();
+      }
+    });
+  }
+
+  Future<void> _complete({required bool showAlarm}) async {
+    if (_completing || !state.hasActiveSession) return;
+    _completing = true;
+    _timer?.cancel();
+    final completedState = state;
+    final plannedMinutes = (completedState.durationSeconds / 60).round();
+    final completedMinutes = (completedState.elapsedSeconds / 60).ceil().clamp(
+      1,
+      plannedMinutes,
+    );
+    await ref
+        .read(studyProvider.notifier)
+        .completeSession(
+          goalId: completedState.goalId,
+          templateId: completedState.templateId,
+          topics: completedState.topics,
+          plannedMinutes: plannedMinutes,
+          completedMinutes: completedMinutes,
+          incentive: completedState.incentive,
+          startedAt: completedState.startedAt,
+        );
+    state = completedState.copyWith(
+      pausedRemainingSeconds: 0,
+      status: StudyTimerStatus.completed,
+    );
+    await _persist();
+    await StudyNotificationService.cancelActiveTimer();
+    await StudyNotificationService.cancelTimerFinishedAlarm();
+    if (showAlarm) {
+      await StudyNotificationService.showTimerFinished();
+    }
+    _completing = false;
+  }
+
+  Future<void> _persist() async {
+    await LocalStorageService.saveStudyTimerState(state);
+  }
+
+  Future<void> _showActiveNotification() async {
+    final remaining = state.remainingSeconds;
+    _lastNotifiedMinute = (remaining / 60).ceil();
+    await StudyNotificationService.showActiveTimer(
+      remainingSeconds: remaining,
+      paused: state.status == StudyTimerStatus.paused,
+    );
+  }
+
+  Future<void> _scheduleFinishAlarm() async {
+    final startedAt = state.startedAt;
+    if (startedAt == null || state.status != StudyTimerStatus.running) return;
+    await StudyNotificationService.scheduleTimerFinished(
+      startedAt.add(Duration(seconds: state.durationSeconds)),
+    );
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+}
+
 // Computed count providers
 final pendingTodosCountProvider = Provider<int>((ref) {
   final sharedItems = ref.watch(sharedItemsProvider);
@@ -1821,6 +2003,31 @@ final shoppingProvider =
 final studyProvider =
     StateNotifierProvider<StudyNotifier, AsyncValue<StudyState>>(
       (ref) => StudyNotifier(),
+    );
+
+final studyTimerProvider =
+    StateNotifierProvider<StudyTimerNotifier, StudyTimerState>(
+      (ref) => StudyTimerNotifier(ref),
+    );
+
+class StudyAlarmToneNotifier extends StateNotifier<AsyncValue<String?>> {
+  StudyAlarmToneNotifier() : super(const AsyncValue.loading()) {
+    _load();
+  }
+
+  Future<void> _load() async {
+    state = AsyncValue.data(await LocalStorageService.getStudyAlarmTonePath());
+  }
+
+  Future<void> useDefaultTone() async {
+    await LocalStorageService.clearStudyAlarmTonePath();
+    state = const AsyncValue.data(null);
+  }
+}
+
+final studyAlarmToneProvider =
+    StateNotifierProvider<StudyAlarmToneNotifier, AsyncValue<String?>>(
+      (ref) => StudyAlarmToneNotifier(),
     );
 
 // ==================== Message Provider ====================

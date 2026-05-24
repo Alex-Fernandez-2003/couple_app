@@ -24,6 +24,8 @@ class LocalStorageService {
   static const String _studyGoalsKey = 'study_goals_storage';
   static const String _studySessionsKey = 'study_sessions_storage';
   static const String _studyTemplatesKey = 'study_templates_storage';
+  static const String _studyTimerStateKey = 'study_timer_state_storage';
+  static const String _studyAlarmToneKey = 'study_alarm_tone_storage';
 
   static Future<SharedPreferences> get _prefs async =>
       await SharedPreferences.getInstance();
@@ -273,6 +275,38 @@ class LocalStorageService {
         .map((template) => jsonEncode(template.toMap()))
         .toList();
     await prefs.setStringList(_studyTemplatesKey, templatesJson);
+  }
+
+  static Future<StudyTimerState?> getStudyTimerState() async {
+    final prefs = await _prefs;
+    final timerJson = prefs.getString(_studyTimerStateKey);
+    if (timerJson == null || timerJson.isEmpty) return null;
+    return StudyTimerState.fromMap(jsonDecode(timerJson));
+  }
+
+  static Future<void> saveStudyTimerState(StudyTimerState timerState) async {
+    final prefs = await _prefs;
+    await prefs.setString(_studyTimerStateKey, jsonEncode(timerState.toMap()));
+  }
+
+  static Future<void> clearStudyTimerState() async {
+    final prefs = await _prefs;
+    await prefs.remove(_studyTimerStateKey);
+  }
+
+  static Future<String?> getStudyAlarmTonePath() async {
+    final prefs = await _prefs;
+    return prefs.getString(_studyAlarmToneKey);
+  }
+
+  static Future<void> saveStudyAlarmTonePath(String path) async {
+    final prefs = await _prefs;
+    await prefs.setString(_studyAlarmToneKey, path);
+  }
+
+  static Future<void> clearStudyAlarmTonePath() async {
+    final prefs = await _prefs;
+    await prefs.remove(_studyAlarmToneKey);
   }
 
   // ==================== Offline Message Queue ====================

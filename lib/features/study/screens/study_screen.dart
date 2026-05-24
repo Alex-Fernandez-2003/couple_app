@@ -1,11 +1,8 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/study.dart';
 import '../../../data/providers.dart';
-import '../../../data/services/study_notification_service.dart';
 
 class StudyScreen extends ConsumerStatefulWidget {
   const StudyScreen({super.key});
@@ -15,96 +12,11 @@ class StudyScreen extends ConsumerStatefulWidget {
 }
 
 class _StudyScreenState extends ConsumerState<StudyScreen> {
-  Timer? _timer;
-  StudyGoal? _activeGoal;
-  StudyTemplate? _activeTemplate;
-  DateTime? _startedAt;
-  int _plannedSeconds = 0;
-  int _remainingSeconds = 0;
-  bool _paused = true;
-
-  @override
-  void dispose() {
-    _timer?.cancel();
-    super.dispose();
-  }
-
-  void _startTimer({
-    required int minutes,
-    StudyGoal? goal,
-    StudyTemplate? template,
-  }) {
-    _timer?.cancel();
-    setState(() {
-      _activeGoal = goal;
-      _activeTemplate = template;
-      _startedAt = DateTime.now();
-      _plannedSeconds = minutes * 60;
-      _remainingSeconds = _plannedSeconds;
-      _paused = false;
-    });
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
-  }
-
-  Future<void> _tick() async {
-    if (_paused) return;
-    if (_remainingSeconds <= 1) {
-      await _completeTimer(showNotification: true);
-      return;
-    }
-    setState(() {
-      _remainingSeconds -= 1;
-    });
-  }
-
-  Future<void> _completeTimer({required bool showNotification}) async {
-    _timer?.cancel();
-    final goal = _activeGoal;
-    final template = _activeTemplate;
-    final plannedMinutes = (_plannedSeconds / 60).round();
-    final completedMinutes = ((_plannedSeconds - _remainingSeconds) / 60)
-        .ceil()
-        .clamp(1, plannedMinutes);
-    await ref
-        .read(studyProvider.notifier)
-        .completeSession(
-          goalId: goal?.id,
-          templateId: template?.id ?? goal?.templateId,
-          topics: goal?.topics ?? const [],
-          plannedMinutes: plannedMinutes,
-          completedMinutes: completedMinutes,
-          incentive: goal?.incentive,
-          startedAt: _startedAt,
-        );
-    if (showNotification) {
-      await StudyNotificationService.showTimerFinished();
-    }
-    if (!mounted) return;
-    setState(() {
-      _activeGoal = null;
-      _activeTemplate = null;
-      _startedAt = null;
-      _plannedSeconds = 0;
-      _remainingSeconds = 0;
-      _paused = true;
-    });
-  }
-
-  void _cancelTimer() {
-    _timer?.cancel();
-    setState(() {
-      _activeGoal = null;
-      _activeTemplate = null;
-      _startedAt = null;
-      _plannedSeconds = 0;
-      _remainingSeconds = 0;
-      _paused = true;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final studyAsync = ref.watch(studyProvider);
+    final timerState = ref.watch(studyTimerProvider);
+    final alarmTone = ref.watch(studyAlarmToneProvider).value;
     return DefaultTabController(
       length: 3,
       child: Scaffold(
@@ -122,45 +34,64 @@ class _StudyScreenState extends ConsumerState<StudyScreen> {
         body: studyAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(child: Text('Error: $error')),
-          data: (state) => TabBarView(
-            children: [
-              _GoalsTab(
-                state: state,
-                onAdd: () => _showGoalDialog(context, ref, state),
-                onEdit: (goal) => _showGoalDialog(context, ref, state, goal),
-                onDelete: (goal) =>
-                    ref.read(studyProvider.notifier).deleteGoal(goal),
-                onStart: (goal) => _startTimer(
-                  minutes: goal.durationMinutes,
-                  goal: goal,
-                  template: _templateFor(state, goal.templateId),
+          data: (state) {
+            final activeGoal = state.goals
+                .where((goal) => goal.id == timerState.goalId)
+                .cast<StudyGoal?>()
+                .firstWhere((goal) => goal != null, orElse: () => null);
+            final activeTemplate = _templateFor(state, timerState.templateId);
+            return TabBarView(
+              children: [
+                _GoalsTab(
+                  state: state,
+                  onAdd: () => _showGoalDialog(context, ref, state),
+                  onEdit: (goal) => _showGoalDialog(context, ref, state, goal),
+                  onDelete: (goal) =>
+                      ref.read(studyProvider.notifier).deleteGoal(goal),
+                  onStart: (goal) => ref
+                      .read(studyTimerProvider.notifier)
+                      .startTimer(
+                        minutes: goal.durationMinutes,
+                        goal: goal,
+                        template: _templateFor(state, goal.templateId),
+                      ),
                 ),
-              ),
-              _TimerTab(
-                state: state,
-                activeGoal: _activeGoal,
-                activeTemplate: _activeTemplate,
-                remainingSeconds: _remainingSeconds,
-                plannedSeconds: _plannedSeconds,
-                paused: _paused,
-                onPauseToggle: _plannedSeconds == 0
-                    ? null
-                    : () => setState(() => _paused = !_paused),
-                onCancel: _plannedSeconds == 0 ? null : _cancelTimer,
-                onComplete: _plannedSeconds == 0
-                    ? null
-                    : () => _completeTimer(showNotification: false),
-                onQuickStart: (minutes, template) =>
-                    _startTimer(minutes: minutes, template: template),
-              ),
-              _TemplatesTab(
-                templates: state.templates,
-                onAdd: () => _showTemplateDialog(context, ref),
-                onDelete: (template) =>
-                    ref.read(studyProvider.notifier).deleteTemplate(template),
-              ),
-            ],
-          ),
+                _TimerTab(
+                  state: state,
+                  activeGoal: activeGoal,
+                  activeTemplate: activeTemplate,
+                  remainingSeconds: timerState.remainingSeconds,
+                  plannedSeconds: timerState.durationSeconds,
+                  paused: timerState.status == StudyTimerStatus.paused,
+                  onPauseToggle: timerState.hasActiveSession
+                      ? () =>
+                            ref.read(studyTimerProvider.notifier).togglePause()
+                      : null,
+                  onCancel: timerState.hasActiveSession
+                      ? () => ref.read(studyTimerProvider.notifier).cancel()
+                      : null,
+                  onComplete: timerState.hasActiveSession
+                      ? () => ref
+                            .read(studyTimerProvider.notifier)
+                            .completeManually()
+                      : null,
+                  onQuickStart: (minutes, template) => ref
+                      .read(studyTimerProvider.notifier)
+                      .startTimer(minutes: minutes, template: template),
+                  alarmTonePath: alarmTone,
+                  onUseDefaultTone: () => ref
+                      .read(studyAlarmToneProvider.notifier)
+                      .useDefaultTone(),
+                ),
+                _TemplatesTab(
+                  templates: state.templates,
+                  onAdd: () => _showTemplateDialog(context, ref),
+                  onDelete: (template) =>
+                      ref.read(studyProvider.notifier).deleteTemplate(template),
+                ),
+              ],
+            );
+          },
         ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () {
@@ -291,6 +222,8 @@ class _TimerTab extends StatelessWidget {
     required this.onCancel,
     required this.onComplete,
     required this.onQuickStart,
+    required this.alarmTonePath,
+    required this.onUseDefaultTone,
   });
 
   final StudyState state;
@@ -303,6 +236,8 @@ class _TimerTab extends StatelessWidget {
   final VoidCallback? onCancel;
   final VoidCallback? onComplete;
   final void Function(int minutes, StudyTemplate? template) onQuickStart;
+  final String? alarmTonePath;
+  final VoidCallback onUseDefaultTone;
 
   @override
   Widget build(BuildContext context) {
@@ -380,6 +315,22 @@ class _TimerTab extends StatelessWidget {
                   ],
                 ),
               ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.notifications_active_outlined),
+            title: const Text('Tono de alarma'),
+            subtitle: Text(
+              alarmTonePath == null
+                  ? 'Predeterminado del sistema'
+                  : 'Personalizado guardado',
+            ),
+            trailing: TextButton(
+              onPressed: onUseDefaultTone,
+              child: const Text('Predeterminado'),
             ),
           ),
         ),

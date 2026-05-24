@@ -1,5 +1,7 @@
 enum StudyTemplateKind { preset, custom }
 
+enum StudyTimerStatus { running, paused, completed, cancelled }
+
 class StudyTemplate {
   final String id;
   final String title;
@@ -38,6 +40,107 @@ class StudyTemplate {
       'kind': kind.name,
       'createdAt': createdAt.toIso8601String(),
     };
+  }
+}
+
+class StudyTimerState {
+  final String? sessionId;
+  final String? goalId;
+  final String? templateId;
+  final List<String> topics;
+  final String? incentive;
+  final DateTime? startedAt;
+  final int durationSeconds;
+  final int pausedRemainingSeconds;
+  final StudyTimerStatus status;
+
+  const StudyTimerState({
+    this.sessionId,
+    this.goalId,
+    this.templateId,
+    this.topics = const [],
+    this.incentive,
+    this.startedAt,
+    this.durationSeconds = 0,
+    this.pausedRemainingSeconds = 0,
+    this.status = StudyTimerStatus.cancelled,
+  });
+
+  bool get hasActiveSession =>
+      status == StudyTimerStatus.running || status == StudyTimerStatus.paused;
+
+  bool get isRunning => status == StudyTimerStatus.running;
+
+  int get remainingSeconds {
+    if (status == StudyTimerStatus.paused) return pausedRemainingSeconds;
+    if (status != StudyTimerStatus.running || startedAt == null) return 0;
+    final elapsed = DateTime.now().difference(startedAt!).inSeconds;
+    return (durationSeconds - elapsed).clamp(0, durationSeconds);
+  }
+
+  int get elapsedSeconds =>
+      (durationSeconds - remainingSeconds).clamp(0, durationSeconds);
+
+  factory StudyTimerState.fromMap(Map<String, dynamic> map) {
+    return StudyTimerState(
+      sessionId: map['sessionId'] as String?,
+      goalId: map['goalId'] as String?,
+      templateId: map['templateId'] as String?,
+      topics: (map['topics'] as List<dynamic>? ?? const [])
+          .map((topic) => topic.toString())
+          .where((topic) => topic.trim().isNotEmpty)
+          .toList(),
+      incentive: map['incentive'] as String?,
+      startedAt: DateTime.tryParse(map['startedAt'] as String? ?? ''),
+      durationSeconds: map['duration'] as int? ?? 0,
+      pausedRemainingSeconds: map['pausedRemainingSeconds'] as int? ?? 0,
+      status: StudyTimerStatus.values.firstWhere(
+        (status) => status.name == (map['status'] as String? ?? 'cancelled'),
+        orElse: () => StudyTimerStatus.cancelled,
+      ),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'sessionId': sessionId,
+      'goalId': goalId,
+      'templateId': templateId,
+      'topics': topics,
+      'incentive': incentive,
+      'startedAt': startedAt?.toIso8601String(),
+      'duration': durationSeconds,
+      'pausedRemainingSeconds': pausedRemainingSeconds,
+      'status': status.name,
+    };
+  }
+
+  StudyTimerState copyWith({
+    String? sessionId,
+    String? goalId,
+    String? templateId,
+    List<String>? topics,
+    String? incentive,
+    DateTime? startedAt,
+    int? durationSeconds,
+    int? pausedRemainingSeconds,
+    StudyTimerStatus? status,
+    bool clearGoal = false,
+    bool clearTemplate = false,
+    bool clearIncentive = false,
+  }) {
+    return StudyTimerState(
+      sessionId: sessionId ?? this.sessionId,
+      goalId: clearGoal ? null : goalId ?? this.goalId,
+      templateId: clearTemplate ? null : templateId ?? this.templateId,
+      topics: topics ?? this.topics,
+      incentive: clearIncentive ? null : incentive ?? this.incentive,
+      startedAt: startedAt ?? this.startedAt,
+      durationSeconds: durationSeconds ?? this.durationSeconds,
+      pausedRemainingSeconds:
+          pausedRemainingSeconds ?? this.pausedRemainingSeconds,
+      status: status ?? this.status,
+    );
   }
 }
 

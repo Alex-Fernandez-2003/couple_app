@@ -1,8 +1,13 @@
+import 'dart:typed_data';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 class StudyNotificationService {
+  static const int timerNotificationId = 9101;
+  static const int timerFinishedNotificationId = 9001;
+
   static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
@@ -30,11 +35,48 @@ class StudyNotificationService {
   static Future<void> showTimerFinished() async {
     await initialize();
     await _notifications.show(
-      9001,
+      timerFinishedNotificationId,
       'Sesión terminada',
       'Buen trabajo. Respira un poquito y registra tu avance.',
-      _details(),
+      _alarmDetails(),
     );
+  }
+
+  static Future<void> scheduleTimerFinished(DateTime finishesAt) async {
+    await initialize();
+    if (!finishesAt.isAfter(DateTime.now())) return;
+    await _notifications.zonedSchedule(
+      timerFinishedNotificationId,
+      'Sesión terminada',
+      'Buen trabajo. Respira un poquito y registra tu avance.',
+      tz.TZDateTime.from(finishesAt, tz.local),
+      _alarmDetails(),
+      androidScheduleMode: AndroidScheduleMode.alarmClock,
+    );
+  }
+
+  static Future<void> showActiveTimer({
+    required int remainingSeconds,
+    required bool paused,
+  }) async {
+    await initialize();
+    final minutes = (remainingSeconds / 60).ceil().clamp(0, 9999);
+    await _notifications.show(
+      timerNotificationId,
+      paused ? 'Sesión de estudio pausada' : 'Sesión de estudio en curso',
+      paused ? 'Puedes retomarla cuando quieras.' : 'Quedan $minutes minutos.',
+      _activeTimerDetails(),
+    );
+  }
+
+  static Future<void> cancelActiveTimer() async {
+    await initialize();
+    await _notifications.cancel(timerNotificationId);
+  }
+
+  static Future<void> cancelTimerFinishedAlarm() async {
+    await initialize();
+    await _notifications.cancel(timerFinishedNotificationId);
   }
 
   static Future<void> scheduleStudyReminder({
@@ -70,5 +112,44 @@ class StudyNotificationService {
     );
     const ios = DarwinNotificationDetails();
     return const NotificationDetails(android: android, iOS: ios);
+  }
+
+  static NotificationDetails _activeTimerDetails() {
+    const android = AndroidNotificationDetails(
+      'study_timer_active',
+      'Temporizador de estudio',
+      channelDescription: 'Notificación permanente del timer de estudio',
+      importance: Importance.low,
+      priority: Priority.low,
+      ongoing: true,
+      autoCancel: false,
+      onlyAlertOnce: true,
+      playSound: false,
+      showWhen: true,
+      category: AndroidNotificationCategory.progress,
+    );
+    const ios = DarwinNotificationDetails(presentSound: false);
+    return const NotificationDetails(android: android, iOS: ios);
+  }
+
+  static NotificationDetails _alarmDetails() {
+    final android = AndroidNotificationDetails(
+      'study_timer_alarm',
+      'Alarma de estudio',
+      channelDescription: 'Alarma al terminar una sesión de estudio',
+      importance: Importance.max,
+      priority: Priority.max,
+      playSound: true,
+      enableVibration: true,
+      fullScreenIntent: true,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
+      additionalFlags: Int32List.fromList([4]),
+      category: AndroidNotificationCategory.alarm,
+    );
+    const ios = DarwinNotificationDetails(
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.timeSensitive,
+    );
+    return NotificationDetails(android: android, iOS: ios);
   }
 }
