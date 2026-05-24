@@ -4,6 +4,8 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+import '../models/study.dart';
+
 class StudyNotificationService {
   static const int timerNotificationId = 9101;
   static const int timerFinishedNotificationId = 9001;
@@ -32,17 +34,22 @@ class StudyNotificationService {
     _initialized = true;
   }
 
-  static Future<void> showTimerFinished() async {
+  static Future<void> showTimerFinished({
+    StudyAlarmTone tone = StudyAlarmTone.system,
+  }) async {
     await initialize();
     await _notifications.show(
       timerFinishedNotificationId,
       'Sesión terminada',
       'Buen trabajo. Respira un poquito y registra tu avance.',
-      _alarmDetails(),
+      _alarmDetails(tone),
     );
   }
 
-  static Future<void> scheduleTimerFinished(DateTime finishesAt) async {
+  static Future<void> scheduleTimerFinished(
+    DateTime finishesAt, {
+    StudyAlarmTone tone = StudyAlarmTone.system,
+  }) async {
     await initialize();
     if (!finishesAt.isAfter(DateTime.now())) return;
     await _notifications.zonedSchedule(
@@ -50,7 +57,7 @@ class StudyNotificationService {
       'Sesión terminada',
       'Buen trabajo. Respira un poquito y registra tu avance.',
       tz.TZDateTime.from(finishesAt, tz.local),
-      _alarmDetails(),
+      _alarmDetails(tone),
       androidScheduleMode: AndroidScheduleMode.alarmClock,
     );
   }
@@ -132,14 +139,18 @@ class StudyNotificationService {
     return const NotificationDetails(android: android, iOS: ios);
   }
 
-  static NotificationDetails _alarmDetails() {
+  static NotificationDetails _alarmDetails(StudyAlarmTone tone) {
+    final rawResourceName = tone.rawResourceName;
     final android = AndroidNotificationDetails(
-      'study_timer_alarm',
-      'Alarma de estudio',
+      tone.channelId,
+      'Alarma de estudio · ${tone.label}',
       channelDescription: 'Alarma al terminar una sesión de estudio',
       importance: Importance.max,
       priority: Priority.max,
       playSound: true,
+      sound: rawResourceName == null
+          ? null
+          : RawResourceAndroidNotificationSound(rawResourceName),
       enableVibration: true,
       fullScreenIntent: true,
       audioAttributesUsage: AudioAttributesUsage.alarm,

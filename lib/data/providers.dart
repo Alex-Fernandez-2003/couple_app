@@ -1919,7 +1919,9 @@ class StudyTimerNotifier extends StateNotifier<StudyTimerState> {
     await StudyNotificationService.cancelActiveTimer();
     await StudyNotificationService.cancelTimerFinishedAlarm();
     if (showAlarm) {
-      await StudyNotificationService.showTimerFinished();
+      await StudyNotificationService.showTimerFinished(
+        tone: await LocalStorageService.getStudyAlarmTone(),
+      );
     }
     _completing = false;
   }
@@ -1942,6 +1944,7 @@ class StudyTimerNotifier extends StateNotifier<StudyTimerState> {
     if (startedAt == null || state.status != StudyTimerStatus.running) return;
     await StudyNotificationService.scheduleTimerFinished(
       startedAt.add(Duration(seconds: state.durationSeconds)),
+      tone: await LocalStorageService.getStudyAlarmTone(),
     );
   }
 
@@ -2010,23 +2013,23 @@ final studyTimerProvider =
       (ref) => StudyTimerNotifier(ref),
     );
 
-class StudyAlarmToneNotifier extends StateNotifier<AsyncValue<String?>> {
+class StudyAlarmToneNotifier extends StateNotifier<AsyncValue<StudyAlarmTone>> {
   StudyAlarmToneNotifier() : super(const AsyncValue.loading()) {
     _load();
   }
 
   Future<void> _load() async {
-    state = AsyncValue.data(await LocalStorageService.getStudyAlarmTonePath());
+    state = AsyncValue.data(await LocalStorageService.getStudyAlarmTone());
   }
 
-  Future<void> useDefaultTone() async {
-    await LocalStorageService.clearStudyAlarmTonePath();
-    state = const AsyncValue.data(null);
+  Future<void> setTone(StudyAlarmTone tone) async {
+    await LocalStorageService.saveStudyAlarmTone(tone);
+    state = AsyncValue.data(tone);
   }
 }
 
 final studyAlarmToneProvider =
-    StateNotifierProvider<StudyAlarmToneNotifier, AsyncValue<String?>>(
+    StateNotifierProvider<StudyAlarmToneNotifier, AsyncValue<StudyAlarmTone>>(
       (ref) => StudyAlarmToneNotifier(),
     );
 

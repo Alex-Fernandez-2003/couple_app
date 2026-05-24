@@ -1,0 +1,11 @@
+Study alarm presets
+
+These WAV files are packaged as Android raw resources and are used by the
+Study timer notification channels:
+
+- study_alarm_soft.wav
+- study_alarm_bell.wav
+- study_alarm_focus.wav
+
+To replace them later, keep the same lowercase file names so the notification
+channels can continue to resolve their raw resource names.

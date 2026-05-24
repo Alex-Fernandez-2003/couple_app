@@ -16,7 +16,8 @@ class _StudyScreenState extends ConsumerState<StudyScreen> {
   Widget build(BuildContext context) {
     final studyAsync = ref.watch(studyProvider);
     final timerState = ref.watch(studyTimerProvider);
-    final alarmTone = ref.watch(studyAlarmToneProvider).value;
+    final alarmTone =
+        ref.watch(studyAlarmToneProvider).value ?? StudyAlarmTone.system;
     return DefaultTabController(
       length: 3,
       child: Scaffold(
@@ -78,10 +79,9 @@ class _StudyScreenState extends ConsumerState<StudyScreen> {
                   onQuickStart: (minutes, template) => ref
                       .read(studyTimerProvider.notifier)
                       .startTimer(minutes: minutes, template: template),
-                  alarmTonePath: alarmTone,
-                  onUseDefaultTone: () => ref
-                      .read(studyAlarmToneProvider.notifier)
-                      .useDefaultTone(),
+                  alarmTone: alarmTone,
+                  onToneChanged: (tone) =>
+                      ref.read(studyAlarmToneProvider.notifier).setTone(tone),
                 ),
                 _TemplatesTab(
                   templates: state.templates,
@@ -222,8 +222,8 @@ class _TimerTab extends StatelessWidget {
     required this.onCancel,
     required this.onComplete,
     required this.onQuickStart,
-    required this.alarmTonePath,
-    required this.onUseDefaultTone,
+    required this.alarmTone,
+    required this.onToneChanged,
   });
 
   final StudyState state;
@@ -236,8 +236,8 @@ class _TimerTab extends StatelessWidget {
   final VoidCallback? onCancel;
   final VoidCallback? onComplete;
   final void Function(int minutes, StudyTemplate? template) onQuickStart;
-  final String? alarmTonePath;
-  final VoidCallback onUseDefaultTone;
+  final StudyAlarmTone alarmTone;
+  final ValueChanged<StudyAlarmTone> onToneChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -320,17 +320,48 @@ class _TimerTab extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         Card(
-          child: ListTile(
-            leading: const Icon(Icons.notifications_active_outlined),
-            title: const Text('Tono de alarma'),
-            subtitle: Text(
-              alarmTonePath == null
-                  ? 'Predeterminado del sistema'
-                  : 'Personalizado guardado',
-            ),
-            trailing: TextButton(
-              onPressed: onUseDefaultTone,
-              child: const Text('Predeterminado'),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(Icons.notifications_active_outlined),
+                    SizedBox(width: 8),
+                    Text(
+                      'Tono de alarma',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  alarmTone.label,
+                  style: const TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 12),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    for (final tone in StudyAlarmTone.values)
+                      ChoiceChip(
+                        label: Text(
+                          tone == StudyAlarmTone.system
+                              ? 'Predeterminado'
+                              : tone.label,
+                        ),
+                        selected: alarmTone == tone,
+                        selectedColor: const Color(
+                          0xFFFD8392,
+                        ).withValues(alpha: 0.18),
+                        checkmarkColor: const Color(0xFFFD8392),
+                        onSelected: (_) => onToneChanged(tone),
+                      ),
+                  ],
+                ),
+              ],
             ),
           ),
         ),

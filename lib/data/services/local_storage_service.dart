@@ -299,6 +299,16 @@ class LocalStorageService {
     return prefs.getString(_studyAlarmToneKey);
   }
 
+  static Future<StudyAlarmTone> getStudyAlarmTone() async {
+    final prefs = await _prefs;
+    return StudyAlarmTone.fromName(prefs.getString(_studyAlarmToneKey));
+  }
+
+  static Future<void> saveStudyAlarmTone(StudyAlarmTone tone) async {
+    final prefs = await _prefs;
+    await prefs.setString(_studyAlarmToneKey, tone.name);
+  }
+
   static Future<void> saveStudyAlarmTonePath(String path) async {
     final prefs = await _prefs;
     await prefs.setString(_studyAlarmToneKey, path);

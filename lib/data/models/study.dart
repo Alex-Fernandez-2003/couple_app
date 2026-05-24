@@ -2,6 +2,47 @@ enum StudyTemplateKind { preset, custom }
 
 enum StudyTimerStatus { running, paused, completed, cancelled }
 
+enum StudyAlarmTone {
+  system,
+  soft,
+  bell,
+  focus;
+
+  String get label {
+    return switch (this) {
+      StudyAlarmTone.system => 'Predeterminado del sistema',
+      StudyAlarmTone.soft => 'Suave',
+      StudyAlarmTone.bell => 'Campanita',
+      StudyAlarmTone.focus => 'Focus',
+    };
+  }
+
+  String get channelId {
+    return switch (this) {
+      StudyAlarmTone.system => 'study_alarm_default',
+      StudyAlarmTone.soft => 'study_alarm_soft',
+      StudyAlarmTone.bell => 'study_alarm_bell',
+      StudyAlarmTone.focus => 'study_alarm_focus',
+    };
+  }
+
+  String? get rawResourceName {
+    return switch (this) {
+      StudyAlarmTone.system => null,
+      StudyAlarmTone.soft => 'study_alarm_soft',
+      StudyAlarmTone.bell => 'study_alarm_bell',
+      StudyAlarmTone.focus => 'study_alarm_focus',
+    };
+  }
+
+  static StudyAlarmTone fromName(String? name) {
+    return StudyAlarmTone.values.firstWhere(
+      (tone) => tone.name == name,
+      orElse: () => StudyAlarmTone.system,
+    );
+  }
+}
+
 class StudyTemplate {
   final String id;
   final String title;
