@@ -4,7 +4,9 @@ import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:path_provider/path_provider.dart';
@@ -13,6 +15,9 @@ import 'package:share_plus/share_plus.dart';
 import 'package:uuid/uuid.dart';
 import '../../../data/models/note.dart';
 import '../../../data/providers.dart';
+
+final _recordingNotifications = FlutterLocalNotificationsPlugin();
+bool _recordingNotificationsInitialized = false;
 
 class NotesScreen extends ConsumerWidget {
   const NotesScreen({super.key});
@@ -398,16 +403,35 @@ class _NoteAttachmentsDialogState
       _showSnack('No hay permiso para grabar audio.');
       return;
     }
+    await _requestRecordingNotificationPermission();
 
     final path = await _newLocalAttachmentPath('audio.m4a');
-    await _recorder.start(
-      const RecordConfig(encoder: AudioEncoder.aacLc),
-      path: path,
-    );
-    setState(() {
-      _recording = true;
-      _recordingStartedAt = DateTime.now();
-    });
+    try {
+      await _recorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          androidConfig: AndroidRecordConfig(
+            audioSource: AndroidAudioSource.mic,
+            service: AndroidService(
+              title: 'Grabando clase',
+              content: 'La grabación sigue activa aunque bloquees el teléfono.',
+            ),
+          ),
+        ),
+        path: path,
+      );
+      if (!mounted) return;
+      setState(() {
+        _recording = true;
+        _recordingStartedAt = DateTime.now();
+      });
+    } on PlatformException catch (error) {
+      _showSnack(_backgroundRecordingErrorMessage(error));
+    } catch (_) {
+      _showSnack(
+        'No pude iniciar la grabación en segundo plano en este dispositivo.',
+      );
+    }
   }
 
   Future<void> _pickAudio() async {
@@ -1774,6 +1798,43 @@ String _formatFileSize(int bytes) {
   if (bytes >= mb) return '${(bytes / mb).toStringAsFixed(1)} MB';
   if (bytes >= kb) return '${(bytes / kb).toStringAsFixed(1)} KB';
   return '$bytes B';
+}
+
+String _backgroundRecordingErrorMessage(PlatformException error) {
+  final rawMessage = [
+    error.code,
+    error.message,
+    error.details?.toString(),
+  ].whereType<String>().join(' ').toLowerCase();
+
+  if (rawMessage.contains('foreground') ||
+      rawMessage.contains('service') ||
+      rawMessage.contains('background')) {
+    return 'Android no permitió iniciar la grabación en segundo plano. Revisa permisos de micrófono, notificaciones y batería para esta app.';
+  }
+
+  if (rawMessage.contains('permission') ||
+      rawMessage.contains('record_audio')) {
+    return 'No hay permiso suficiente para grabar audio. Revisa el permiso de micrófono de la app.';
+  }
+
+  return 'No pude iniciar la grabación en segundo plano en este dispositivo.';
+}
+
+Future<void> _requestRecordingNotificationPermission() async {
+  if (!Platform.isAndroid) return;
+  if (!_recordingNotificationsInitialized) {
+    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const settings = InitializationSettings(android: android);
+    await _recordingNotifications.initialize(settings);
+    _recordingNotificationsInitialized = true;
+  }
+
+  await _recordingNotifications
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >()
+      ?.requestNotificationsPermission();
 }
 
 String _formatSpeed(double speed) {
