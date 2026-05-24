@@ -19,11 +19,29 @@ import '../../../data/providers.dart';
 final _recordingNotifications = FlutterLocalNotificationsPlugin();
 bool _recordingNotificationsInitialized = false;
 
-class NotesScreen extends ConsumerWidget {
+class NotesScreen extends ConsumerStatefulWidget {
   const NotesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<NotesScreen> createState() => _NotesScreenState();
+}
+
+class _NotesScreenState extends ConsumerState<NotesScreen> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _updateQuery(String value) {
+    setState(() => _query = value.trim().toLowerCase());
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final notesAsync = ref.watch(notesProvider);
 
     return Scaffold(
@@ -62,8 +80,13 @@ class NotesScreen extends ConsumerWidget {
           }
 
           return _GroupedNotesList(
-            notes: state.notes,
+            notes: _filterNotes(state.notes, state.categories, _query),
             categories: state.categories,
+            searchController: _searchController,
+            query: _query,
+            onSearchChanged: _updateQuery,
+            onToggleFavorite: (note) =>
+                ref.read(notesProvider.notifier).toggleNoteFavorite(note.id),
             onEdit: (note) => _showNoteDialog(context, ref, note: note),
             onDelete: (note) => _showDeleteNoteConfirmation(context, ref, note),
             onAttachments: (note) => _showAttachmentsDialog(context, ref, note),
@@ -163,6 +186,10 @@ class _GroupedNotesList extends StatelessWidget {
   const _GroupedNotesList({
     required this.notes,
     required this.categories,
+    required this.searchController,
+    required this.query,
+    required this.onSearchChanged,
+    required this.onToggleFavorite,
     required this.onEdit,
     required this.onDelete,
     required this.onAttachments,
@@ -170,6 +197,10 @@ class _GroupedNotesList extends StatelessWidget {
 
   final List<Note> notes;
   final List<NoteCategory> categories;
+  final TextEditingController searchController;
+  final String query;
+  final ValueChanged<String> onSearchChanged;
+  final ValueChanged<Note> onToggleFavorite;
   final ValueChanged<Note> onEdit;
   final ValueChanged<Note> onDelete;
   final ValueChanged<Note> onAttachments;
@@ -179,8 +210,10 @@ class _GroupedNotesList extends StatelessWidget {
     final categoryById = {
       for (final category in categories) category.id: category,
     };
+    final favoriteNotes = notes.where((note) => note.isFavorite).toList();
+    final regularNotes = notes.where((note) => !note.isFavorite).toList();
     final grouped = <String?, List<Note>>{};
-    for (final note in notes) {
+    for (final note in regularNotes) {
       grouped.putIfAbsent(note.categoryId, () => []).add(note);
     }
 
@@ -191,44 +224,164 @@ class _GroupedNotesList extends StatelessWidget {
       if (grouped.containsKey(null)) null,
     ];
 
+    if (notes.isEmpty) {
+      return ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          _NotesSearchField(
+            controller: searchController,
+            onChanged: onSearchChanged,
+          ),
+          const SizedBox(height: 48),
+          _EmptyState(
+            icon: Icons.search_off_outlined,
+            title: 'No encontré notas',
+            message: 'Prueba con otra palabra, categoría o fecha de audio.',
+            actionLabel: 'Limpiar búsqueda',
+            onAction: () {
+              searchController.clear();
+              onSearchChanged('');
+            },
+          ),
+        ],
+      );
+    }
+
+    final sectionsCount = categoryIds.length + (favoriteNotes.isEmpty ? 0 : 1);
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: categoryIds.length,
+      itemCount: sectionsCount + 1,
       itemBuilder: (context, index) {
-        final categoryId = categoryIds[index];
+        if (index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: _NotesSearchField(
+              controller: searchController,
+              onChanged: onSearchChanged,
+            ),
+          );
+        }
+
+        final sectionIndex = index - 1;
+        if (favoriteNotes.isNotEmpty && sectionIndex == 0) {
+          return _NotesSection(
+            title: query.isEmpty ? 'Favoritas' : 'Favoritas encontradas',
+            notes: favoriteNotes,
+            categoryById: categoryById,
+            onToggleFavorite: onToggleFavorite,
+            onEdit: onEdit,
+            onDelete: onDelete,
+            onAttachments: onAttachments,
+          );
+        }
+
+        final categoryIndex = sectionIndex - (favoriteNotes.isEmpty ? 0 : 1);
+        final categoryId = categoryIds[categoryIndex];
         final categoryName = categoryId == null
             ? 'Sin categoría'
             : categoryById[categoryId]?.name ?? 'Sin categoría';
         final categoryNotes = grouped[categoryId] ?? const <Note>[];
 
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(left: 4, bottom: 8),
-                child: Text(
-                  categoryName,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF2D3748),
-                  ),
-                ),
-              ),
-              for (final note in categoryNotes)
-                _NoteCard(
-                  note: note,
-                  categoryName: categoryName,
-                  onEdit: () => onEdit(note),
-                  onDelete: () => onDelete(note),
-                  onAttachments: () => onAttachments(note),
-                ),
-            ],
-          ),
+        return _NotesSection(
+          title: categoryName,
+          notes: categoryNotes,
+          categoryById: categoryById,
+          onToggleFavorite: onToggleFavorite,
+          onEdit: onEdit,
+          onDelete: onDelete,
+          onAttachments: onAttachments,
         );
       },
+    );
+  }
+}
+
+class _NotesSearchField extends StatelessWidget {
+  const _NotesSearchField({required this.controller, required this.onChanged});
+
+  final TextEditingController controller;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      onChanged: onChanged,
+      decoration: InputDecoration(
+        prefixIcon: const Icon(Icons.search),
+        hintText: 'Buscar notas, categorías o adjuntos',
+        filled: true,
+        fillColor: const Color(0xFFFFF7F8),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(16),
+          borderSide: BorderSide.none,
+        ),
+        suffixIcon: controller.text.isEmpty
+            ? null
+            : IconButton(
+                icon: const Icon(Icons.close),
+                tooltip: 'Limpiar búsqueda',
+                onPressed: () {
+                  controller.clear();
+                  onChanged('');
+                },
+              ),
+      ),
+    );
+  }
+}
+
+class _NotesSection extends StatelessWidget {
+  const _NotesSection({
+    required this.title,
+    required this.notes,
+    required this.categoryById,
+    required this.onToggleFavorite,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onAttachments,
+  });
+
+  final String title;
+  final List<Note> notes;
+  final Map<String, NoteCategory> categoryById;
+  final ValueChanged<Note> onToggleFavorite;
+  final ValueChanged<Note> onEdit;
+  final ValueChanged<Note> onDelete;
+  final ValueChanged<Note> onAttachments;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(left: 4, bottom: 8),
+            child: Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF2D3748),
+              ),
+            ),
+          ),
+          for (final note in notes)
+            _NoteCard(
+              note: note,
+              categoryName: note.categoryId == null
+                  ? 'Sin categoría'
+                  : categoryById[note.categoryId]?.name ?? 'Sin categoría',
+              onToggleFavorite: () => onToggleFavorite(note),
+              onEdit: () => onEdit(note),
+              onDelete: () => onDelete(note),
+              onAttachments: () => onAttachments(note),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -237,6 +390,7 @@ class _NoteCard extends StatelessWidget {
   const _NoteCard({
     required this.note,
     required this.categoryName,
+    required this.onToggleFavorite,
     required this.onEdit,
     required this.onDelete,
     required this.onAttachments,
@@ -244,6 +398,7 @@ class _NoteCard extends StatelessWidget {
 
   final Note note;
   final String categoryName;
+  final VoidCallback onToggleFavorite;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
   final VoidCallback onAttachments;
@@ -253,6 +408,12 @@ class _NoteCard extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       child: ListTile(
+        leading: IconButton(
+          icon: Icon(note.isFavorite ? Icons.star : Icons.star_border),
+          color: note.isFavorite ? const Color(0xFFFD8392) : Colors.grey,
+          tooltip: note.isFavorite ? 'Quitar favorito' : 'Marcar favorito',
+          onPressed: onToggleFavorite,
+        ),
         title: Text(
           note.title,
           style: const TextStyle(fontWeight: FontWeight.w500),
@@ -594,6 +755,18 @@ class _NoteAttachmentsDialogState
         );
   }
 
+  Future<void> _toggleAudioReviewed(NoteAudioAttachment attachment) async {
+    await ref
+        .read(notesProvider.notifier)
+        .toggleAudioAttachmentReviewed(widget.noteId, attachment.id);
+  }
+
+  Future<void> _reorderAudioAttachments(int oldIndex, int newIndex) async {
+    await ref
+        .read(notesProvider.notifier)
+        .reorderAudioAttachments(widget.noteId, oldIndex, newIndex);
+  }
+
   Future<void> _openFileAttachment(NoteFileAttachment attachment) async {
     final result = await OpenFilex.open(attachment.path);
     if (result.type != ResultType.done) {
@@ -621,6 +794,12 @@ class _NoteAttachmentsDialogState
     await ref
         .read(notesProvider.notifier)
         .deleteFileAttachment(widget.noteId, attachment.id);
+  }
+
+  Future<void> _toggleFileReviewed(NoteFileAttachment attachment) async {
+    await ref
+        .read(notesProvider.notifier)
+        .toggleFileAttachmentReviewed(widget.noteId, attachment.id);
   }
 
   Future<void> _shareFileAttachment(NoteFileAttachment attachment) async {
@@ -817,36 +996,43 @@ class _NoteAttachmentsDialogState
                   children: [
                     if (audioAttachments.isNotEmpty) ...[
                       const _AttachmentSectionTitle('Audios'),
-                      for (final attachment in audioAttachments)
-                        Builder(
-                          builder: (context) {
-                            final isActive = _activeAudioId == attachment.id;
-                            final isPlaying =
-                                isActive && _playerState == PlayerState.playing;
-                            final duration = _effectiveDuration(attachment);
-                            final position = isActive
-                                ? _currentPosition
-                                : _positions[attachment.id] ?? Duration.zero;
+                      ReorderableListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        onReorder: _reorderAudioAttachments,
+                        buildDefaultDragHandles: false,
+                        itemCount: audioAttachments.length,
+                        itemBuilder: (context, index) {
+                          final attachment = audioAttachments[index];
+                          final isActive = _activeAudioId == attachment.id;
+                          final isPlaying =
+                              isActive && _playerState == PlayerState.playing;
+                          final duration = _effectiveDuration(attachment);
+                          final position = isActive
+                              ? _currentPosition
+                              : _positions[attachment.id] ?? Duration.zero;
 
-                            return _AudioAttachmentTile(
-                              attachment: attachment,
-                              isActive: isActive,
-                              isPlaying: isPlaying,
-                              position: position,
-                              duration: duration,
-                              speed: _speed,
-                              onPlayPause: () => _togglePlayback(attachment),
-                              onSeek: isActive ? _seekActive : null,
-                              onSpeedChanged: _setSpeed,
-                              onOpenExternal: () => _openExternally(attachment),
-                              onShare: () => _shareAudioAttachment(attachment),
-                              onRename: () =>
-                                  _renameAudioAttachment(attachment),
-                              onDelete: () =>
-                                  _deleteAudioAttachment(attachment),
-                            );
-                          },
-                        ),
+                          return _AudioAttachmentTile(
+                            key: ValueKey(attachment.id),
+                            index: index,
+                            attachment: attachment,
+                            isActive: isActive,
+                            isPlaying: isPlaying,
+                            position: position,
+                            duration: duration,
+                            speed: _speed,
+                            onPlayPause: () => _togglePlayback(attachment),
+                            onSeek: isActive ? _seekActive : null,
+                            onSpeedChanged: _setSpeed,
+                            onOpenExternal: () => _openExternally(attachment),
+                            onShare: () => _shareAudioAttachment(attachment),
+                            onRename: () => _renameAudioAttachment(attachment),
+                            onDelete: () => _deleteAudioAttachment(attachment),
+                            onToggleReviewed: () =>
+                                _toggleAudioReviewed(attachment),
+                          );
+                        },
+                      ),
                     ],
                     if (fileAttachments.isNotEmpty) ...[
                       const _AttachmentSectionTitle('Archivos'),
@@ -857,6 +1043,8 @@ class _NoteAttachmentsDialogState
                           onShare: () => _shareFileAttachment(attachment),
                           onRename: () => _renameFileAttachment(attachment),
                           onDelete: () => _deleteFileAttachment(attachment),
+                          onToggleReviewed: () =>
+                              _toggleFileReviewed(attachment),
                         ),
                     ],
                   ],
@@ -903,6 +1091,7 @@ class _FileAttachmentTile extends StatelessWidget {
     required this.onShare,
     required this.onRename,
     required this.onDelete,
+    required this.onToggleReviewed,
   });
 
   final NoteFileAttachment attachment;
@@ -910,6 +1099,7 @@ class _FileAttachmentTile extends StatelessWidget {
   final VoidCallback onShare;
   final VoidCallback onRename;
   final VoidCallback onDelete;
+  final VoidCallback onToggleReviewed;
 
   @override
   Widget build(BuildContext context) {
@@ -917,7 +1107,17 @@ class _FileAttachmentTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       child: ListTile(
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        leading: _FileAttachmentPreview(attachment: attachment),
+        leading: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Checkbox(
+              value: attachment.isReviewed,
+              onChanged: (_) => onToggleReviewed(),
+              activeColor: const Color(0xFFFD8392),
+            ),
+            _FileAttachmentPreview(attachment: attachment),
+          ],
+        ),
         title: Text(
           attachment.name,
           maxLines: 1,
@@ -925,7 +1125,7 @@ class _FileAttachmentTile extends StatelessWidget {
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
-          '${_formatFileSize(attachment.sizeBytes)} · ${_formatDate(attachment.createdAt)}',
+          '${_formatFileSize(attachment.sizeBytes)} · ${_formatDateTime(attachment.createdAt)}',
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
@@ -1067,6 +1267,8 @@ class _AttachmentRenameDialogState extends State<_AttachmentRenameDialog> {
 
 class _AudioAttachmentTile extends StatelessWidget {
   const _AudioAttachmentTile({
+    super.key,
+    required this.index,
     required this.attachment,
     required this.isActive,
     required this.isPlaying,
@@ -1079,9 +1281,11 @@ class _AudioAttachmentTile extends StatelessWidget {
     required this.onShare,
     required this.onRename,
     required this.onDelete,
+    required this.onToggleReviewed,
     this.onSeek,
   });
 
+  final int index;
   final NoteAudioAttachment attachment;
   final bool isActive;
   final bool isPlaying;
@@ -1095,6 +1299,7 @@ class _AudioAttachmentTile extends StatelessWidget {
   final VoidCallback onShare;
   final VoidCallback onRename;
   final VoidCallback onDelete;
+  final VoidCallback onToggleReviewed;
 
   @override
   Widget build(BuildContext context) {
@@ -1114,6 +1319,18 @@ class _AudioAttachmentTile extends StatelessWidget {
           children: [
             Row(
               children: [
+                ReorderableDragStartListener(
+                  index: index,
+                  child: const Padding(
+                    padding: EdgeInsets.only(right: 4),
+                    child: Icon(Icons.drag_handle, color: Colors.grey),
+                  ),
+                ),
+                Checkbox(
+                  value: attachment.isReviewed,
+                  onChanged: (_) => onToggleReviewed(),
+                  activeColor: const Color(0xFFFD8392),
+                ),
                 IconButton.filledTonal(
                   onPressed: onPlayPause,
                   icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
@@ -1132,7 +1349,7 @@ class _AudioAttachmentTile extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${_formatDuration(duration)} · ${_formatDate(attachment.createdAt)}',
+                        '${_formatDuration(duration)} · ${_formatDateTime(attachment.createdAt)}',
                         style: const TextStyle(
                           fontSize: 12,
                           color: Colors.grey,
@@ -1658,7 +1875,7 @@ class _EmptyState extends StatelessWidget {
   final String title;
   final String message;
   final String actionLabel;
-  final VoidCallback onAction;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) {
@@ -1692,12 +1909,14 @@ class _EmptyState extends StatelessWidget {
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: onAction,
-              icon: const Icon(Icons.add),
-              label: Text(actionLabel),
-            ),
+            if (onAction != null) ...[
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.add),
+                label: Text(actionLabel),
+              ),
+            ],
           ],
         ),
       ),
@@ -1744,6 +1963,47 @@ String _formatDate(DateTime date) {
   } else {
     return '${date.day}/${date.month}/${date.year}';
   }
+}
+
+String _formatDateTime(DateTime date) {
+  final day = date.day.toString().padLeft(2, '0');
+  final month = date.month.toString().padLeft(2, '0');
+  final year = date.year.toString();
+  final hour = date.hour.toString().padLeft(2, '0');
+  final minute = date.minute.toString().padLeft(2, '0');
+  return '$day/$month/$year $hour:$minute';
+}
+
+List<Note> _filterNotes(
+  List<Note> notes,
+  List<NoteCategory> categories,
+  String query,
+) {
+  if (query.isEmpty) return notes;
+  final categoryById = {
+    for (final category in categories) category.id: category.name,
+  };
+
+  return notes.where((note) {
+    final categoryName = note.categoryId == null
+        ? 'Sin categoría'
+        : categoryById[note.categoryId] ?? 'Sin categoría';
+    final searchable = [
+      note.title,
+      note.content,
+      categoryName,
+      for (final attachment in note.audioAttachments) ...[
+        attachment.customName ?? _basename(attachment.path),
+        _basename(attachment.path),
+        _formatDateTime(attachment.createdAt),
+      ],
+      for (final attachment in note.fileAttachments) ...[
+        attachment.name,
+        _basename(attachment.path),
+      ],
+    ].join(' ').toLowerCase();
+    return searchable.contains(query);
+  }).toList();
 }
 
 String _basename(String path) {

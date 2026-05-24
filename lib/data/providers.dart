@@ -560,6 +560,21 @@ class NotesNotifier extends StateNotifier<AsyncValue<NotesState>> {
     );
   }
 
+  Future<void> toggleNoteFavorite(String noteId) async {
+    final current = state.value ?? const NotesState.empty();
+    final notes = current.notes
+        .map(
+          (note) => note.id == noteId
+              ? note.copyWith(
+                  isFavorite: !note.isFavorite,
+                  updatedAt: DateTime.now(),
+                )
+              : note,
+        )
+        .toList();
+    await _saveNotes(notes);
+  }
+
   Future<void> deleteNote(String noteId) async {
     final current = state.value ?? const NotesState.empty();
     Note? deletedNote;
@@ -611,6 +626,47 @@ class NotesNotifier extends StateNotifier<AsyncValue<NotesState>> {
                   : attachment,
             )
             .toList(),
+        updatedAt: DateTime.now(),
+      );
+    }).toList();
+    await _saveNotes(notes);
+  }
+
+  Future<void> toggleAudioAttachmentReviewed(
+    String noteId,
+    String attachmentId,
+  ) async {
+    final current = state.value ?? const NotesState.empty();
+    final notes = current.notes.map((note) {
+      if (note.id != noteId) return note;
+      return note.copyWith(
+        audioAttachments: note.audioAttachments
+            .map(
+              (attachment) => attachment.id == attachmentId
+                  ? attachment.copyWith(isReviewed: !attachment.isReviewed)
+                  : attachment,
+            )
+            .toList(),
+        updatedAt: DateTime.now(),
+      );
+    }).toList();
+    await _saveNotes(notes);
+  }
+
+  Future<void> reorderAudioAttachments(
+    String noteId,
+    int oldIndex,
+    int newIndex,
+  ) async {
+    final current = state.value ?? const NotesState.empty();
+    final notes = current.notes.map((note) {
+      if (note.id != noteId) return note;
+      final attachments = [...note.audioAttachments];
+      final targetIndex = newIndex > oldIndex ? newIndex - 1 : newIndex;
+      final moved = attachments.removeAt(oldIndex);
+      attachments.insert(targetIndex, moved);
+      return note.copyWith(
+        audioAttachments: attachments,
         updatedAt: DateTime.now(),
       );
     }).toList();
@@ -669,6 +725,27 @@ class NotesNotifier extends StateNotifier<AsyncValue<NotesState>> {
             .map(
               (attachment) => attachment.id == attachmentId
                   ? attachment.copyWith(name: name)
+                  : attachment,
+            )
+            .toList(),
+        updatedAt: DateTime.now(),
+      );
+    }).toList();
+    await _saveNotes(notes);
+  }
+
+  Future<void> toggleFileAttachmentReviewed(
+    String noteId,
+    String attachmentId,
+  ) async {
+    final current = state.value ?? const NotesState.empty();
+    final notes = current.notes.map((note) {
+      if (note.id != noteId) return note;
+      return note.copyWith(
+        fileAttachments: note.fileAttachments
+            .map(
+              (attachment) => attachment.id == attachmentId
+                  ? attachment.copyWith(isReviewed: !attachment.isReviewed)
                   : attachment,
             )
             .toList(),

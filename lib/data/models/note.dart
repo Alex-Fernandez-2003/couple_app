@@ -8,6 +8,7 @@ class NoteAudioAttachment {
   final Duration duration;
   final DateTime createdAt;
   final String? customName;
+  final bool isReviewed;
 
   const NoteAudioAttachment({
     required this.id,
@@ -15,6 +16,7 @@ class NoteAudioAttachment {
     required this.duration,
     required this.createdAt,
     this.customName,
+    this.isReviewed = false,
   });
 
   factory NoteAudioAttachment.fromMap(Map<String, dynamic> map) {
@@ -26,6 +28,7 @@ class NoteAudioAttachment {
           DateTime.tryParse(map['createdAt'] as String? ?? '') ??
           DateTime.now(),
       customName: map['customName'] as String?,
+      isReviewed: map['isReviewed'] as bool? ?? false,
     );
   }
 
@@ -36,6 +39,7 @@ class NoteAudioAttachment {
       'durationMs': duration.inMilliseconds,
       'createdAt': createdAt.toIso8601String(),
       'customName': customName,
+      'isReviewed': isReviewed,
     };
   }
 
@@ -44,6 +48,7 @@ class NoteAudioAttachment {
     Duration? duration,
     DateTime? createdAt,
     String? customName,
+    bool? isReviewed,
     bool clearCustomName = false,
   }) {
     return NoteAudioAttachment(
@@ -52,6 +57,7 @@ class NoteAudioAttachment {
       duration: duration ?? this.duration,
       createdAt: createdAt ?? this.createdAt,
       customName: clearCustomName ? null : customName ?? this.customName,
+      isReviewed: isReviewed ?? this.isReviewed,
     );
   }
 }
@@ -63,6 +69,7 @@ class NoteFileAttachment {
   final String name;
   final int sizeBytes;
   final DateTime createdAt;
+  final bool isReviewed;
 
   const NoteFileAttachment({
     required this.id,
@@ -71,6 +78,7 @@ class NoteFileAttachment {
     required this.name,
     required this.sizeBytes,
     required this.createdAt,
+    this.isReviewed = false,
   });
 
   factory NoteFileAttachment.fromMap(Map<String, dynamic> map) {
@@ -87,6 +95,7 @@ class NoteFileAttachment {
       createdAt:
           DateTime.tryParse(map['createdAt'] as String? ?? '') ??
           DateTime.now(),
+      isReviewed: map['isReviewed'] as bool? ?? false,
     );
   }
 
@@ -98,6 +107,7 @@ class NoteFileAttachment {
       'name': name,
       'sizeBytes': sizeBytes,
       'createdAt': createdAt.toIso8601String(),
+      'isReviewed': isReviewed,
     };
   }
 
@@ -107,6 +117,7 @@ class NoteFileAttachment {
     String? name,
     int? sizeBytes,
     DateTime? createdAt,
+    bool? isReviewed,
   }) {
     return NoteFileAttachment(
       id: id,
@@ -115,6 +126,7 @@ class NoteFileAttachment {
       name: name ?? this.name,
       sizeBytes: sizeBytes ?? this.sizeBytes,
       createdAt: createdAt ?? this.createdAt,
+      isReviewed: isReviewed ?? this.isReviewed,
     );
   }
 }
@@ -125,6 +137,7 @@ class NoteAttachment {
   final String path;
   final String name;
   final DateTime createdAt;
+  final bool isReviewed;
 
   const NoteAttachment({
     required this.id,
@@ -132,6 +145,7 @@ class NoteAttachment {
     required this.path,
     required this.name,
     required this.createdAt,
+    this.isReviewed = false,
   });
 
   factory NoteAttachment.fromMap(Map<String, dynamic> map) {
@@ -147,6 +161,7 @@ class NoteAttachment {
       createdAt:
           DateTime.tryParse(map['createdAt'] as String? ?? '') ??
           DateTime.now(),
+      isReviewed: map['isReviewed'] as bool? ?? false,
     );
   }
 
@@ -157,6 +172,7 @@ class NoteAttachment {
       'path': path,
       'name': name,
       'createdAt': createdAt.toIso8601String(),
+      'isReviewed': isReviewed,
     };
   }
 }
@@ -171,6 +187,7 @@ class Note {
   final List<NoteAttachment> attachments;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final bool isFavorite;
 
   Note({
     required this.id,
@@ -182,6 +199,7 @@ class Note {
     this.attachments = const [],
     required this.createdAt,
     required this.updatedAt,
+    this.isFavorite = false,
   });
 
   factory Note.fromMap(Map<String, dynamic> map) {
@@ -210,6 +228,7 @@ class Note {
               duration: Duration.zero,
               createdAt: attachment.createdAt,
               customName: attachment.name,
+              isReviewed: attachment.isReviewed,
             ),
           ),
     ];
@@ -237,6 +256,7 @@ class Note {
               name: attachment.name,
               sizeBytes: 0,
               createdAt: attachment.createdAt,
+              isReviewed: attachment.isReviewed,
             ),
           ),
     ];
@@ -250,6 +270,7 @@ class Note {
       attachments: const [],
       createdAt: DateTime.parse(map['createdAt'] as String),
       updatedAt: DateTime.parse(map['updatedAt'] as String),
+      isFavorite: map['isFavorite'] as bool? ?? false,
     );
   }
 
@@ -270,6 +291,7 @@ class Note {
           .toList(growable: false),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
+      'isFavorite': isFavorite,
     };
   }
 
@@ -284,6 +306,7 @@ class Note {
     bool clearCategory = false,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isFavorite,
   }) {
     return Note(
       id: id ?? this.id,
@@ -295,6 +318,7 @@ class Note {
       attachments: attachments ?? this.attachments,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isFavorite: isFavorite ?? this.isFavorite,
     );
   }
 }
