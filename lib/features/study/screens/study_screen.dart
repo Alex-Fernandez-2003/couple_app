@@ -11,99 +11,155 @@ class StudyScreen extends ConsumerStatefulWidget {
   ConsumerState<StudyScreen> createState() => _StudyScreenState();
 }
 
-class _StudyScreenState extends ConsumerState<StudyScreen> {
+class _StudyScreenState extends ConsumerState<StudyScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _startGoal(StudyState state, StudyGoal goal) async {
+    await ref
+        .read(studyTimerProvider.notifier)
+        .startTimer(
+          minutes: goal.durationMinutes,
+          goal: goal,
+          template: _templateFor(state, goal.templateId),
+        );
+    _tabController.animateTo(1);
+  }
+
   @override
   Widget build(BuildContext context) {
+    ref.listen<AsyncValue<StudyState>>(studyProvider, (previous, next) {
+      if (previous?.value == null) return;
+      final oldGoals = previous?.value?.progressGoals ?? const [];
+      final newGoals = next.value?.progressGoals ?? const [];
+      for (final goal in newGoals) {
+        final oldGoal = oldGoals
+            .where((item) => item.id == goal.id)
+            .cast<StudyProgressGoal?>()
+            .firstWhere((item) => item != null, orElse: () => null);
+        if (oldGoal?.completedAt == null && goal.completedAt != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Meta completada'),
+                content: Text(
+                  'Lograste "${goal.title}". Qué orgullo, un paso más cerca.',
+                ),
+                actions: [
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('Celebrar'),
+                  ),
+                ],
+              ),
+            );
+          });
+          break;
+        }
+      }
+    });
     final studyAsync = ref.watch(studyProvider);
     final timerState = ref.watch(studyTimerProvider);
     final alarmTone =
         ref.watch(studyAlarmToneProvider).value ?? StudyAlarmTone.system;
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Estudio'),
-          centerTitle: true,
-          bottom: const TabBar(
-            tabs: [
-              Tab(text: 'Metas'),
-              Tab(text: 'Timer'),
-              Tab(text: 'Plantillas'),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Estudio'),
+        centerTitle: true,
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Metas'),
+            Tab(text: 'Timer'),
+            Tab(text: 'Plantillas'),
+          ],
+        ),
+      ),
+      body: studyAsync.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(child: Text('Error: $error')),
+        data: (state) {
+          final activeGoal = state.goals
+              .where((goal) => goal.id == timerState.goalId)
+              .cast<StudyGoal?>()
+              .firstWhere((goal) => goal != null, orElse: () => null);
+          final activeTemplate = _templateFor(state, timerState.templateId);
+          return TabBarView(
+            controller: _tabController,
+            children: [
+              _GoalsTab(
+                state: state,
+                onAdd: () => _showGoalDialog(context, ref, state),
+                onAddProgress: () => _showProgressGoalDialog(context, ref),
+                onEdit: (goal) => _showGoalDialog(context, ref, state, goal),
+                onDelete: (goal) =>
+                    ref.read(studyProvider.notifier).deleteGoal(goal),
+                onDeleteProgress: (goal) =>
+                    ref.read(studyProvider.notifier).deleteProgressGoal(goal),
+                onStart: (goal) => _startGoal(state, goal),
+              ),
+              _TimerTab(
+                state: state,
+                activeGoal: activeGoal,
+                activeTemplate: activeTemplate,
+                remainingSeconds: timerState.remainingSeconds,
+                plannedSeconds: timerState.durationSeconds,
+                paused: timerState.status == StudyTimerStatus.paused,
+                onPauseToggle: timerState.hasActiveSession
+                    ? () => ref.read(studyTimerProvider.notifier).togglePause()
+                    : null,
+                onCancel: timerState.hasActiveSession
+                    ? () => ref.read(studyTimerProvider.notifier).cancel()
+                    : null,
+                onComplete: timerState.hasActiveSession
+                    ? () => ref
+                          .read(studyTimerProvider.notifier)
+                          .completeManually()
+                    : null,
+                onQuickStart: (minutes, template) => ref
+                    .read(studyTimerProvider.notifier)
+                    .startTimer(minutes: minutes, template: template),
+                onManualStart: (seconds) => ref
+                    .read(studyTimerProvider.notifier)
+                    .startTimer(totalSeconds: seconds),
+                alarmTone: alarmTone,
+                onToneChanged: (tone) =>
+                    ref.read(studyAlarmToneProvider.notifier).setTone(tone),
+              ),
+              _TemplatesTab(
+                templates: state.templates,
+                onAdd: () => _showTemplateDialog(context, ref),
+                onDelete: (template) =>
+                    ref.read(studyProvider.notifier).deleteTemplate(template),
+              ),
             ],
-          ),
-        ),
-        body: studyAsync.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, _) => Center(child: Text('Error: $error')),
-          data: (state) {
-            final activeGoal = state.goals
-                .where((goal) => goal.id == timerState.goalId)
-                .cast<StudyGoal?>()
-                .firstWhere((goal) => goal != null, orElse: () => null);
-            final activeTemplate = _templateFor(state, timerState.templateId);
-            return TabBarView(
-              children: [
-                _GoalsTab(
-                  state: state,
-                  onAdd: () => _showGoalDialog(context, ref, state),
-                  onEdit: (goal) => _showGoalDialog(context, ref, state, goal),
-                  onDelete: (goal) =>
-                      ref.read(studyProvider.notifier).deleteGoal(goal),
-                  onStart: (goal) => ref
-                      .read(studyTimerProvider.notifier)
-                      .startTimer(
-                        minutes: goal.durationMinutes,
-                        goal: goal,
-                        template: _templateFor(state, goal.templateId),
-                      ),
-                ),
-                _TimerTab(
-                  state: state,
-                  activeGoal: activeGoal,
-                  activeTemplate: activeTemplate,
-                  remainingSeconds: timerState.remainingSeconds,
-                  plannedSeconds: timerState.durationSeconds,
-                  paused: timerState.status == StudyTimerStatus.paused,
-                  onPauseToggle: timerState.hasActiveSession
-                      ? () =>
-                            ref.read(studyTimerProvider.notifier).togglePause()
-                      : null,
-                  onCancel: timerState.hasActiveSession
-                      ? () => ref.read(studyTimerProvider.notifier).cancel()
-                      : null,
-                  onComplete: timerState.hasActiveSession
-                      ? () => ref
-                            .read(studyTimerProvider.notifier)
-                            .completeManually()
-                      : null,
-                  onQuickStart: (minutes, template) => ref
-                      .read(studyTimerProvider.notifier)
-                      .startTimer(minutes: minutes, template: template),
-                  alarmTone: alarmTone,
-                  onToneChanged: (tone) =>
-                      ref.read(studyAlarmToneProvider.notifier).setTone(tone),
-                ),
-                _TemplatesTab(
-                  templates: state.templates,
-                  onAdd: () => _showTemplateDialog(context, ref),
-                  onDelete: (template) =>
-                      ref.read(studyProvider.notifier).deleteTemplate(template),
-                ),
-              ],
-            );
-          },
-        ),
-        floatingActionButton: FloatingActionButton.extended(
-          onPressed: () {
-            final state = ref.read(studyProvider).value;
-            if (state == null) return;
-            _showGoalDialog(context, ref, state);
-          },
-          icon: const Icon(Icons.add),
-          label: const Text('Meta'),
-          backgroundColor: const Color(0xFFFD8392),
-          foregroundColor: Colors.white,
-        ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          final state = ref.read(studyProvider).value;
+          if (state == null) return;
+          _showGoalDialog(context, ref, state);
+        },
+        icon: const Icon(Icons.add),
+        label: const Text('Meta'),
+        backgroundColor: const Color(0xFFFD8392),
+        foregroundColor: Colors.white,
       ),
     );
   }
@@ -113,20 +169,24 @@ class _GoalsTab extends StatelessWidget {
   const _GoalsTab({
     required this.state,
     required this.onAdd,
+    required this.onAddProgress,
     required this.onEdit,
     required this.onDelete,
+    required this.onDeleteProgress,
     required this.onStart,
   });
 
   final StudyState state;
   final VoidCallback onAdd;
+  final VoidCallback onAddProgress;
   final ValueChanged<StudyGoal> onEdit;
   final ValueChanged<StudyGoal> onDelete;
+  final ValueChanged<StudyProgressGoal> onDeleteProgress;
   final ValueChanged<StudyGoal> onStart;
 
   @override
   Widget build(BuildContext context) {
-    if (state.goals.isEmpty) {
+    if (state.goals.isEmpty && state.progressGoals.isEmpty) {
       return _WarmEmptyState(
         icon: Icons.school_outlined,
         title: 'Una meta pequeña para empezar',
@@ -138,9 +198,50 @@ class _GoalsTab extends StatelessWidget {
     }
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-      itemCount: state.goals.length,
+      itemCount: state.goals.length + state.progressGoals.length + 2,
       itemBuilder: (context, index) {
-        final goal = state.goals[index];
+        if (index == 0) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              alignment: WrapAlignment.end,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: onAddProgress,
+                  icon: const Icon(Icons.track_changes),
+                  label: const Text('Meta acumulativa'),
+                ),
+                ElevatedButton.icon(
+                  onPressed: onAdd,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Meta diaria'),
+                ),
+              ],
+            ),
+          );
+        }
+        final progressIndex = index - 1;
+        if (progressIndex < state.progressGoals.length) {
+          final goal = state.progressGoals[progressIndex];
+          return _ProgressGoalCard(
+            goal: goal,
+            sessions: state.sessions,
+            onDelete: () => onDeleteProgress(goal),
+          );
+        }
+        if (progressIndex == state.progressGoals.length) {
+          return const Padding(
+            padding: EdgeInsets.only(left: 4, bottom: 8, top: 8),
+            child: Text(
+              'Sesiones planificadas',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          );
+        }
+        final goalIndex = progressIndex - state.progressGoals.length - 1;
+        final goal = state.goals[goalIndex];
         final template = _templateFor(state, goal.templateId);
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
@@ -222,6 +323,7 @@ class _TimerTab extends StatelessWidget {
     required this.onCancel,
     required this.onComplete,
     required this.onQuickStart,
+    required this.onManualStart,
     required this.alarmTone,
     required this.onToneChanged,
   });
@@ -236,6 +338,7 @@ class _TimerTab extends StatelessWidget {
   final VoidCallback? onCancel;
   final VoidCallback? onComplete;
   final void Function(int minutes, StudyTemplate? template) onQuickStart;
+  final Future<void> Function(int seconds) onManualStart;
   final StudyAlarmTone alarmTone;
   final ValueChanged<StudyAlarmTone> onToneChanged;
 
@@ -382,6 +485,8 @@ class _TimerTab extends StatelessWidget {
               ),
           ],
         ),
+        const SizedBox(height: 12),
+        _ManualTimerCard(onStart: onManualStart),
         const SizedBox(height: 20),
         const Text(
           'Historial',
@@ -408,6 +513,177 @@ class _TimerTab extends StatelessWidget {
               ),
             ),
       ],
+    );
+  }
+}
+
+class _ManualTimerCard extends StatefulWidget {
+  const _ManualTimerCard({required this.onStart});
+
+  final Future<void> Function(int seconds) onStart;
+
+  @override
+  State<_ManualTimerCard> createState() => _ManualTimerCardState();
+}
+
+class _ManualTimerCardState extends State<_ManualTimerCard> {
+  final _minutesController = TextEditingController(text: '5');
+  final _secondsController = TextEditingController(text: '00');
+  String? _error;
+  bool _starting = false;
+
+  @override
+  void dispose() {
+    _minutesController.dispose();
+    _secondsController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _start() async {
+    final minutes = int.tryParse(_minutesController.text.trim()) ?? 0;
+    final seconds = int.tryParse(_secondsController.text.trim()) ?? 0;
+    final totalSeconds = minutes * 60 + seconds;
+    if (totalSeconds < 5) {
+      setState(() => _error = 'El mínimo es 5 segundos');
+      return;
+    }
+    if (totalSeconds > 12 * 60 * 60) {
+      setState(() => _error = 'El máximo es 12 horas');
+      return;
+    }
+    setState(() {
+      _error = null;
+      _starting = true;
+    });
+    try {
+      await widget.onStart(totalSeconds);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _error = error.toString());
+    } finally {
+      if (mounted) setState(() => _starting = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Temporizador manual',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _minutesController,
+                    decoration: const InputDecoration(labelText: 'Minutos'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _secondsController,
+                    decoration: const InputDecoration(labelText: 'Segundos'),
+                    keyboardType: TextInputType.number,
+                  ),
+                ),
+              ],
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: 8),
+              Text(_error!, style: const TextStyle(color: Colors.red)),
+            ],
+            const SizedBox(height: 12),
+            Align(
+              alignment: Alignment.centerRight,
+              child: ElevatedButton.icon(
+                onPressed: _starting ? null : _start,
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Iniciar temporizador'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ProgressGoalCard extends StatelessWidget {
+  const _ProgressGoalCard({
+    required this.goal,
+    required this.sessions,
+    required this.onDelete,
+  });
+
+  final StudyProgressGoal goal;
+  final List<StudySession> sessions;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = _progressForGoal(goal, sessions);
+    final ratio = goal.target <= 0
+        ? 0.0
+        : (progress / goal.target).clamp(0.0, 1.0);
+    final unit = goal.kind == StudyProgressGoalKind.totalSessions
+        ? 'sesiones'
+        : 'min';
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    goal.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                if (goal.completedAt != null)
+                  const Icon(Icons.emoji_events, color: Color(0xFFFD8392)),
+                IconButton(
+                  onPressed: onDelete,
+                  icon: const Icon(Icons.delete_outline),
+                  tooltip: 'Eliminar',
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 0, end: ratio),
+              duration: const Duration(milliseconds: 350),
+              builder: (context, value, _) => LinearProgressIndicator(
+                value: value,
+                minHeight: 8,
+                borderRadius: BorderRadius.circular(8),
+                backgroundColor: const Color(0xFFF7C0C9),
+                color: const Color(0xFFFD8392),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '$progress/${goal.target} $unit · ${(ratio * 100).round()}%',
+              style: const TextStyle(color: Color(0xFF718096)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -491,6 +767,7 @@ class _GoalDialogState extends ConsumerState<_GoalDialog> {
   String? _templateId;
   DateTime? _reminderAt;
   bool _saving = false;
+  String? _durationError;
 
   @override
   void initState() {
@@ -543,6 +820,10 @@ class _GoalDialogState extends ConsumerState<_GoalDialog> {
 
   Future<void> _save() async {
     final duration = int.tryParse(_durationController.text.trim()) ?? 30;
+    if (duration < 5) {
+      setState(() => _durationError = 'El tiempo mínimo es 5 minutos');
+      return;
+    }
     final topics = _topicsController.text
         .split(',')
         .map((topic) => topic.trim())
@@ -550,31 +831,42 @@ class _GoalDialogState extends ConsumerState<_GoalDialog> {
         .toList();
     final incentive = _incentiveController.text.trim();
     setState(() => _saving = true);
-    final notifier = ref.read(studyProvider.notifier);
-    final goal = widget.goal;
-    if (goal == null) {
-      await notifier.addGoal(
-        weekday: _weekday,
-        durationMinutes: duration.clamp(5, 240),
-        topics: topics,
-        incentive: incentive.isEmpty ? null : incentive,
-        templateId: _templateId,
-        reminderAt: _reminderAt,
-      );
-    } else {
-      await notifier.updateGoal(
-        goal.copyWith(
+    try {
+      final notifier = ref.read(studyProvider.notifier);
+      final goal = widget.goal;
+      if (goal == null) {
+        await notifier.addGoal(
           weekday: _weekday,
           durationMinutes: duration.clamp(5, 240),
           topics: topics,
           incentive: incentive.isEmpty ? null : incentive,
           templateId: _templateId,
           reminderAt: _reminderAt,
-          clearIncentive: incentive.isEmpty,
-          clearTemplate: _templateId == null,
-          clearReminder: _reminderAt == null,
-        ),
-      );
+        );
+      } else {
+        await notifier.updateGoal(
+          goal.copyWith(
+            weekday: _weekday,
+            durationMinutes: duration.clamp(5, 240),
+            topics: topics,
+            incentive: incentive.isEmpty ? null : incentive,
+            templateId: _templateId,
+            reminderAt: _reminderAt,
+            clearIncentive: incentive.isEmpty,
+            clearTemplate: _templateId == null,
+            clearReminder: _reminderAt == null,
+          ),
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _saving = false;
+        _durationError = error.toString().contains('El tiempo mínimo')
+            ? 'El tiempo mínimo es 5 minutos'
+            : error.toString();
+      });
+      return;
     }
     if (mounted) Navigator.of(context).pop();
   }
@@ -598,8 +890,16 @@ class _GoalDialogState extends ConsumerState<_GoalDialog> {
             ),
             TextField(
               controller: _durationController,
-              decoration: const InputDecoration(labelText: 'Duración minutos'),
+              decoration: InputDecoration(
+                labelText: 'Duración minutos',
+                errorText: _durationError,
+              ),
               keyboardType: TextInputType.number,
+              onChanged: (_) {
+                if (_durationError != null) {
+                  setState(() => _durationError = null);
+                }
+              },
             ),
             TextField(
               controller: _topicsController,
@@ -673,6 +973,90 @@ class _GoalDialogState extends ConsumerState<_GoalDialog> {
 
 void _showTemplateDialog(BuildContext context, WidgetRef ref) {
   showDialog(context: context, builder: (context) => const _TemplateDialog());
+}
+
+void _showProgressGoalDialog(BuildContext context, WidgetRef ref) {
+  showDialog(
+    context: context,
+    builder: (context) => const _ProgressGoalDialog(),
+  );
+}
+
+class _ProgressGoalDialog extends ConsumerStatefulWidget {
+  const _ProgressGoalDialog();
+
+  @override
+  ConsumerState<_ProgressGoalDialog> createState() =>
+      _ProgressGoalDialogState();
+}
+
+class _ProgressGoalDialogState extends ConsumerState<_ProgressGoalDialog> {
+  StudyProgressGoalKind _kind = StudyProgressGoalKind.weeklyMinutes;
+  final _targetController = TextEditingController(text: '300');
+
+  @override
+  void dispose() {
+    _targetController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final target = int.tryParse(_targetController.text.trim()) ?? 0;
+    if (target <= 0) return;
+    await ref
+        .read(studyProvider.notifier)
+        .addProgressGoal(kind: _kind, target: target);
+    if (mounted) Navigator.of(context).pop();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Meta acumulativa'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DropdownButtonFormField<StudyProgressGoalKind>(
+            initialValue: _kind,
+            decoration: const InputDecoration(labelText: 'Tipo'),
+            items: const [
+              DropdownMenuItem(
+                value: StudyProgressGoalKind.weeklyMinutes,
+                child: Text('Meta semanal por minutos'),
+              ),
+              DropdownMenuItem(
+                value: StudyProgressGoalKind.totalMinutes,
+                child: Text('Meta total por minutos'),
+              ),
+              DropdownMenuItem(
+                value: StudyProgressGoalKind.totalSessions,
+                child: Text('Meta total por sesiones'),
+              ),
+            ],
+            onChanged: (value) {
+              setState(() {
+                _kind = value ?? StudyProgressGoalKind.weeklyMinutes;
+                _targetController.text =
+                    _kind == StudyProgressGoalKind.totalSessions ? '10' : '300';
+              });
+            },
+          ),
+          TextField(
+            controller: _targetController,
+            decoration: const InputDecoration(labelText: 'Objetivo total'),
+            keyboardType: TextInputType.number,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(onPressed: _save, child: const Text('Guardar')),
+      ],
+    );
+  }
 }
 
 class _TemplateDialog extends ConsumerStatefulWidget {
@@ -836,4 +1220,32 @@ String _formatDateTime(DateTime date) {
   final hour = date.hour.toString().padLeft(2, '0');
   final minute = date.minute.toString().padLeft(2, '0');
   return '${date.day}/${date.month}/${date.year} $hour:$minute';
+}
+
+int _progressForGoal(StudyProgressGoal goal, List<StudySession> sessions) {
+  final relevantSessions = switch (goal.kind) {
+    StudyProgressGoalKind.weeklyMinutes => sessions.where((session) {
+      final now = DateTime.now();
+      final weekStart = DateTime(
+        now.year,
+        now.month,
+        now.day,
+      ).subtract(Duration(days: now.weekday - DateTime.monday));
+      final weekEnd = weekStart.add(const Duration(days: 7));
+      return !session.completedAt.isBefore(weekStart) &&
+          session.completedAt.isBefore(weekEnd);
+    }),
+    StudyProgressGoalKind.totalMinutes ||
+    StudyProgressGoalKind.totalSessions => sessions.where(
+      (session) => !session.completedAt.isBefore(goal.createdAt),
+    ),
+  };
+  return switch (goal.kind) {
+    StudyProgressGoalKind.totalSessions => relevantSessions.length,
+    StudyProgressGoalKind.weeklyMinutes ||
+    StudyProgressGoalKind.totalMinutes => relevantSessions.fold<int>(
+      0,
+      (total, session) => total + session.completedMinutes,
+    ),
+  };
 }

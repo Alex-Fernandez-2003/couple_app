@@ -1534,27 +1534,32 @@ class ShoppingNotifier extends StateNotifier<AsyncValue<ShoppingState>> {
 
 class StudyState {
   final List<StudyGoal> goals;
+  final List<StudyProgressGoal> progressGoals;
   final List<StudySession> sessions;
   final List<StudyTemplate> templates;
 
   const StudyState({
     required this.goals,
+    required this.progressGoals,
     required this.sessions,
     required this.templates,
   });
 
   const StudyState.empty()
     : goals = const [],
+      progressGoals = const [],
       sessions = const [],
       templates = const [];
 
   StudyState copyWith({
     List<StudyGoal>? goals,
+    List<StudyProgressGoal>? progressGoals,
     List<StudySession>? sessions,
     List<StudyTemplate>? templates,
   }) {
     return StudyState(
       goals: goals ?? this.goals,
+      progressGoals: progressGoals ?? this.progressGoals,
       sessions: sessions ?? this.sessions,
       templates: templates ?? this.templates,
     );
@@ -1569,11 +1574,13 @@ class StudyNotifier extends StateNotifier<AsyncValue<StudyState>> {
   Future<void> _loadStudy() async {
     try {
       final goals = await LocalStorageService.getStudyGoals();
+      final progressGoals = await LocalStorageService.getStudyProgressGoals();
       final sessions = await LocalStorageService.getStudySessions();
       final storedTemplates = await LocalStorageService.getStudyTemplates();
       state = AsyncValue.data(
         StudyState(
           goals: goals,
+          progressGoals: progressGoals,
           sessions: sessions,
           templates: [..._presetTemplates(), ...storedTemplates],
         ),
@@ -1591,6 +1598,9 @@ class StudyNotifier extends StateNotifier<AsyncValue<StudyState>> {
     String? templateId,
     DateTime? reminderAt,
   }) async {
+    if (durationMinutes < 5) {
+      throw ArgumentError('El tiempo mínimo es 5 minutos');
+    }
     final now = DateTime.now();
     final goal = StudyGoal(
       id: const Uuid().v4(),
@@ -1609,6 +1619,9 @@ class StudyNotifier extends StateNotifier<AsyncValue<StudyState>> {
   }
 
   Future<void> updateGoal(StudyGoal goal) async {
+    if (goal.durationMinutes < 5) {
+      throw ArgumentError('El tiempo mínimo es 5 minutos');
+    }
     final current = state.value ?? const StudyState.empty();
     final updated = goal.copyWith(updatedAt: DateTime.now());
     await _saveGoals(
@@ -1626,6 +1639,35 @@ class StudyNotifier extends StateNotifier<AsyncValue<StudyState>> {
       current.goals.where((item) => item.id != goal.id).toList(),
     );
     await StudyNotificationService.cancelReminder(_notificationId(goal.id));
+  }
+
+  Future<void> addProgressGoal({
+    required StudyProgressGoalKind kind,
+    required int target,
+  }) async {
+    if (target <= 0) return;
+    final title = switch (kind) {
+      StudyProgressGoalKind.weeklyMinutes =>
+        'Estudiar $target minutos esta semana',
+      StudyProgressGoalKind.totalMinutes => 'Estudiar $target minutos',
+      StudyProgressGoalKind.totalSessions => 'Completar $target sesiones',
+    };
+    final goal = StudyProgressGoal(
+      id: const Uuid().v4(),
+      title: title,
+      kind: kind,
+      target: target,
+      createdAt: DateTime.now(),
+    );
+    final current = state.value ?? const StudyState.empty();
+    await _saveProgressGoals([goal, ...current.progressGoals]);
+  }
+
+  Future<void> deleteProgressGoal(StudyProgressGoal goal) async {
+    final current = state.value ?? const StudyState.empty();
+    await _saveProgressGoals(
+      current.progressGoals.where((item) => item.id != goal.id).toList(),
+    );
   }
 
   Future<void> completeSession({
@@ -1649,7 +1691,24 @@ class StudyNotifier extends StateNotifier<AsyncValue<StudyState>> {
       completedAt: DateTime.now(),
     );
     final current = state.value ?? const StudyState.empty();
-    await _saveSessions([session, ...current.sessions]);
+    final sessions = [session, ...current.sessions];
+    final progressGoals = current.progressGoals.map((goal) {
+      if (goal.completedAt != null) return goal;
+      final progress = _progressForGoal(goal, sessions);
+      return progress >= goal.target
+          ? goal.copyWith(completedAt: DateTime.now())
+          : goal;
+    }).toList();
+    state = AsyncValue.data(
+      current.copyWith(sessions: sessions, progressGoals: progressGoals),
+    );
+    try {
+      await LocalStorageService.saveStudySessions(sessions);
+      await LocalStorageService.saveStudyProgressGoals(progressGoals);
+    } catch (error, stackTrace) {
+      state = AsyncValue.data(current);
+      state = AsyncValue.error(error, stackTrace);
+    }
   }
 
   Future<void> addTemplate(String title, String description) async {
@@ -1690,11 +1749,11 @@ class StudyNotifier extends StateNotifier<AsyncValue<StudyState>> {
     }
   }
 
-  Future<void> _saveSessions(List<StudySession> sessions) async {
+  Future<void> _saveProgressGoals(List<StudyProgressGoal> goals) async {
     final current = state.value ?? const StudyState.empty();
-    state = AsyncValue.data(current.copyWith(sessions: sessions));
+    state = AsyncValue.data(current.copyWith(progressGoals: goals));
     try {
-      await LocalStorageService.saveStudySessions(sessions);
+      await LocalStorageService.saveStudyProgressGoals(goals);
     } catch (error, stackTrace) {
       state = AsyncValue.data(current);
       state = AsyncValue.error(error, stackTrace);
@@ -1719,11 +1778,39 @@ class StudyNotifier extends StateNotifier<AsyncValue<StudyState>> {
     await StudyNotificationService.scheduleStudyReminder(
       id: _notificationId(goal.id),
       reminderAt: reminder,
-      title: 'Momento de estudiar',
+      title: 'Hora de estudiar',
       body: goal.topics.isEmpty
           ? 'Una sesión pequeña también cuenta.'
-          : 'Hoy toca: ${goal.topics.join(', ')}',
+          : 'Hoy toca estudiar: ${goal.topics.join(', ')}',
     );
+  }
+
+  int _progressForGoal(StudyProgressGoal goal, List<StudySession> sessions) {
+    final relevantSessions = switch (goal.kind) {
+      StudyProgressGoalKind.weeklyMinutes => sessions.where((session) {
+        final now = DateTime.now();
+        final weekStart = DateTime(
+          now.year,
+          now.month,
+          now.day,
+        ).subtract(Duration(days: now.weekday - DateTime.monday));
+        final weekEnd = weekStart.add(const Duration(days: 7));
+        return !session.completedAt.isBefore(weekStart) &&
+            session.completedAt.isBefore(weekEnd);
+      }),
+      StudyProgressGoalKind.totalMinutes ||
+      StudyProgressGoalKind.totalSessions => sessions.where(
+        (session) => !session.completedAt.isBefore(goal.createdAt),
+      ),
+    };
+    return switch (goal.kind) {
+      StudyProgressGoalKind.totalSessions => relevantSessions.length,
+      StudyProgressGoalKind.weeklyMinutes ||
+      StudyProgressGoalKind.totalMinutes => relevantSessions.fold<int>(
+        0,
+        (total, session) => total + session.completedMinutes,
+      ),
+    };
   }
 
   int _notificationId(String id) => id.hashCode & 0x7fffffff;
@@ -1798,10 +1885,17 @@ class StudyTimerNotifier extends StateNotifier<StudyTimerState> {
   }
 
   Future<void> startTimer({
-    required int minutes,
+    int? minutes,
+    int? totalSeconds,
     StudyGoal? goal,
     StudyTemplate? template,
   }) async {
+    final durationSeconds = totalSeconds ?? (minutes ?? 0) * 60;
+    if (durationSeconds < 5 || durationSeconds > 12 * 60 * 60) {
+      throw ArgumentError(
+        'El temporizador debe durar entre 5 segundos y 12 horas',
+      );
+    }
     _timer?.cancel();
     final now = DateTime.now();
     state = StudyTimerState(
@@ -1811,8 +1905,8 @@ class StudyTimerNotifier extends StateNotifier<StudyTimerState> {
       topics: goal?.topics ?? const [],
       incentive: goal?.incentive,
       startedAt: now,
-      durationSeconds: minutes * 60,
-      pausedRemainingSeconds: minutes * 60,
+      durationSeconds: durationSeconds,
+      pausedRemainingSeconds: durationSeconds,
       status: StudyTimerStatus.running,
     );
     _lastNotifiedMinute = null;

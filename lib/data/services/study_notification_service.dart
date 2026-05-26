@@ -100,7 +100,7 @@ class StudyNotificationService {
       body,
       tz.TZDateTime.from(reminderAt, tz.local),
       _details(),
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.alarmClock,
     );
   }
 

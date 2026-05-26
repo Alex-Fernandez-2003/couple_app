@@ -24,6 +24,7 @@ class LocalStorageService {
   static const String _studyGoalsKey = 'study_goals_storage';
   static const String _studySessionsKey = 'study_sessions_storage';
   static const String _studyTemplatesKey = 'study_templates_storage';
+  static const String _studyProgressGoalsKey = 'study_progress_goals_storage';
   static const String _studyTimerStateKey = 'study_timer_state_storage';
   static const String _studyAlarmToneKey = 'study_alarm_tone_storage';
 
@@ -275,6 +276,22 @@ class LocalStorageService {
         .map((template) => jsonEncode(template.toMap()))
         .toList();
     await prefs.setStringList(_studyTemplatesKey, templatesJson);
+  }
+
+  static Future<List<StudyProgressGoal>> getStudyProgressGoals() async {
+    final prefs = await _prefs;
+    final goalsJson = prefs.getStringList(_studyProgressGoalsKey) ?? [];
+    return goalsJson
+        .map((json) => StudyProgressGoal.fromMap(jsonDecode(json)))
+        .toList();
+  }
+
+  static Future<void> saveStudyProgressGoals(
+    List<StudyProgressGoal> goals,
+  ) async {
+    final prefs = await _prefs;
+    final goalsJson = goals.map((goal) => jsonEncode(goal.toMap())).toList();
+    await prefs.setStringList(_studyProgressGoalsKey, goalsJson);
   }
 
   static Future<StudyTimerState?> getStudyTimerState() async {

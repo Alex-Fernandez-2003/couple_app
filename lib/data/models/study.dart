@@ -43,6 +43,8 @@ enum StudyAlarmTone {
   }
 }
 
+enum StudyProgressGoalKind { weeklyMinutes, totalMinutes, totalSessions }
+
 class StudyTemplate {
   final String id;
   final String title;
@@ -81,6 +83,62 @@ class StudyTemplate {
       'kind': kind.name,
       'createdAt': createdAt.toIso8601String(),
     };
+  }
+}
+
+class StudyProgressGoal {
+  final String id;
+  final String title;
+  final StudyProgressGoalKind kind;
+  final int target;
+  final DateTime createdAt;
+  final DateTime? completedAt;
+
+  const StudyProgressGoal({
+    required this.id,
+    required this.title,
+    required this.kind,
+    required this.target,
+    required this.createdAt,
+    this.completedAt,
+  });
+
+  factory StudyProgressGoal.fromMap(Map<String, dynamic> map) {
+    return StudyProgressGoal(
+      id: map['id'] as String,
+      title: map['title'] as String? ?? 'Meta de estudio',
+      kind: StudyProgressGoalKind.values.firstWhere(
+        (kind) => kind.name == (map['kind'] as String? ?? 'totalMinutes'),
+        orElse: () => StudyProgressGoalKind.totalMinutes,
+      ),
+      target: map['target'] as int? ?? 1,
+      createdAt:
+          DateTime.tryParse(map['createdAt'] as String? ?? '') ??
+          DateTime.now(),
+      completedAt: DateTime.tryParse(map['completedAt'] as String? ?? ''),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'title': title,
+      'kind': kind.name,
+      'target': target,
+      'createdAt': createdAt.toIso8601String(),
+      'completedAt': completedAt?.toIso8601String(),
+    };
+  }
+
+  StudyProgressGoal copyWith({DateTime? completedAt}) {
+    return StudyProgressGoal(
+      id: id,
+      title: title,
+      kind: kind,
+      target: target,
+      createdAt: createdAt,
+      completedAt: completedAt ?? this.completedAt,
+    );
   }
 }
 

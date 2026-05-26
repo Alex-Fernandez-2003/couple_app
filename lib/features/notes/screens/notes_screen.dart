@@ -951,106 +951,116 @@ class _NoteAttachmentsDialogState
     final hasAttachments =
         audioAttachments.isNotEmpty || fileAttachments.isNotEmpty;
 
+    final screenSize = MediaQuery.sizeOf(context);
     return AlertDialog(
       title: const Text('Adjuntos'),
-      content: SizedBox(
-        width: double.maxFinite,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: _toggleRecording,
-                  icon: Icon(_recording ? Icons.stop : Icons.mic),
-                  label: Text(_recording ? 'Detener' : 'Grabar audio'),
-                ),
-                OutlinedButton.icon(
-                  onPressed: _pickAudio,
-                  icon: const Icon(Icons.attach_file),
-                  label: const Text('Adjuntar audio'),
-                ),
-                OutlinedButton.icon(
-                  onPressed: _showFileAttachmentOptions,
-                  icon: const Icon(Icons.note_add_outlined),
-                  label: const Text('Adjuntar archivo'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (!hasAttachments)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 24),
-                child: Text(
-                  'Aún no hay adjuntos en esta nota.',
-                  textAlign: TextAlign.center,
-                ),
-              )
-            else
-              Flexible(
-                child: ListView(
-                  shrinkWrap: true,
-                  children: [
-                    if (audioAttachments.isNotEmpty) ...[
-                      const _AttachmentSectionTitle('Audios'),
-                      ReorderableListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        onReorder: _reorderAudioAttachments,
-                        buildDefaultDragHandles: false,
-                        itemCount: audioAttachments.length,
-                        itemBuilder: (context, index) {
-                          final attachment = audioAttachments[index];
-                          final isActive = _activeAudioId == attachment.id;
-                          final isPlaying =
-                              isActive && _playerState == PlayerState.playing;
-                          final duration = _effectiveDuration(attachment);
-                          final position = isActive
-                              ? _currentPosition
-                              : _positions[attachment.id] ?? Duration.zero;
-
-                          return _AudioAttachmentTile(
-                            key: ValueKey(attachment.id),
-                            index: index,
-                            attachment: attachment,
-                            isActive: isActive,
-                            isPlaying: isPlaying,
-                            position: position,
-                            duration: duration,
-                            speed: _speed,
-                            onPlayPause: () => _togglePlayback(attachment),
-                            onSeek: isActive ? _seekActive : null,
-                            onSpeedChanged: _setSpeed,
-                            onOpenExternal: () => _openExternally(attachment),
-                            onShare: () => _shareAudioAttachment(attachment),
-                            onRename: () => _renameAudioAttachment(attachment),
-                            onDelete: () => _deleteAudioAttachment(attachment),
-                            onToggleReviewed: () =>
-                                _toggleAudioReviewed(attachment),
-                          );
-                        },
-                      ),
-                    ],
-                    if (fileAttachments.isNotEmpty) ...[
-                      const _AttachmentSectionTitle('Archivos'),
-                      for (final attachment in fileAttachments)
-                        _FileAttachmentTile(
-                          attachment: attachment,
-                          onOpen: () => _openFileAttachment(attachment),
-                          onShare: () => _shareFileAttachment(attachment),
-                          onRename: () => _renameFileAttachment(attachment),
-                          onDelete: () => _deleteFileAttachment(attachment),
-                          onToggleReviewed: () =>
-                              _toggleFileReviewed(attachment),
-                        ),
-                    ],
-                  ],
-                ),
+      insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+      content: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 560,
+          maxHeight: screenSize.height * 0.72,
+        ),
+        child: SizedBox(
+          width: screenSize.width,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  ElevatedButton.icon(
+                    onPressed: _toggleRecording,
+                    icon: Icon(_recording ? Icons.stop : Icons.mic),
+                    label: Text(_recording ? 'Detener' : 'Grabar audio'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _pickAudio,
+                    icon: const Icon(Icons.attach_file),
+                    label: const Text('Adjuntar audio'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: _showFileAttachmentOptions,
+                    icon: const Icon(Icons.note_add_outlined),
+                    label: const Text('Adjuntar archivo'),
+                  ),
+                ],
               ),
-          ],
+              const SizedBox(height: 16),
+              if (!hasAttachments)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 24),
+                  child: Text(
+                    'Aún no hay adjuntos en esta nota.',
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView(
+                    shrinkWrap: true,
+                    children: [
+                      if (audioAttachments.isNotEmpty) ...[
+                        const _AttachmentSectionTitle('Audios'),
+                        ReorderableListView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          onReorder: _reorderAudioAttachments,
+                          buildDefaultDragHandles: false,
+                          itemCount: audioAttachments.length,
+                          itemBuilder: (context, index) {
+                            final attachment = audioAttachments[index];
+                            final isActive = _activeAudioId == attachment.id;
+                            final isPlaying =
+                                isActive && _playerState == PlayerState.playing;
+                            final duration = _effectiveDuration(attachment);
+                            final position = isActive
+                                ? _currentPosition
+                                : _positions[attachment.id] ?? Duration.zero;
+
+                            return _AudioAttachmentTile(
+                              key: ValueKey(attachment.id),
+                              index: index,
+                              attachment: attachment,
+                              isActive: isActive,
+                              isPlaying: isPlaying,
+                              position: position,
+                              duration: duration,
+                              speed: _speed,
+                              onPlayPause: () => _togglePlayback(attachment),
+                              onSeek: isActive ? _seekActive : null,
+                              onSpeedChanged: _setSpeed,
+                              onOpenExternal: () => _openExternally(attachment),
+                              onShare: () => _shareAudioAttachment(attachment),
+                              onRename: () =>
+                                  _renameAudioAttachment(attachment),
+                              onDelete: () =>
+                                  _deleteAudioAttachment(attachment),
+                              onToggleReviewed: () =>
+                                  _toggleAudioReviewed(attachment),
+                            );
+                          },
+                        ),
+                      ],
+                      if (fileAttachments.isNotEmpty) ...[
+                        const _AttachmentSectionTitle('Archivos'),
+                        for (final attachment in fileAttachments)
+                          _FileAttachmentTile(
+                            attachment: attachment,
+                            onOpen: () => _openFileAttachment(attachment),
+                            onShare: () => _shareFileAttachment(attachment),
+                            onRename: () => _renameFileAttachment(attachment),
+                            onDelete: () => _deleteFileAttachment(attachment),
+                            onToggleReviewed: () =>
+                                _toggleFileReviewed(attachment),
+                          ),
+                      ],
+                    ],
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
       actions: [
@@ -1314,50 +1324,32 @@ class _AudioAttachmentTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 10),
       child: Padding(
         padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 380;
+            final title = Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    attachment.customName ?? _basename(attachment.path),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    '${_formatDuration(duration)} · ${_formatDateTime(attachment.createdAt)}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            );
+            final actions = Wrap(
+              spacing: 2,
               children: [
-                ReorderableDragStartListener(
-                  index: index,
-                  child: const Padding(
-                    padding: EdgeInsets.only(right: 4),
-                    child: Icon(Icons.drag_handle, color: Colors.grey),
-                  ),
-                ),
-                Checkbox(
-                  value: attachment.isReviewed,
-                  onChanged: (_) => onToggleReviewed(),
-                  activeColor: const Color(0xFFFD8392),
-                ),
-                IconButton.filledTonal(
-                  onPressed: onPlayPause,
-                  icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
-                  tooltip: isPlaying ? 'Pausar' : 'Reproducir',
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        attachment.customName ?? _basename(attachment.path),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '${_formatDuration(duration)} · ${_formatDateTime(attachment.createdAt)}',
-                        style: const TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
                 IconButton(
                   icon: const Icon(Icons.ios_share_outlined),
                   tooltip: 'Compartir',
@@ -1378,56 +1370,93 @@ class _AudioAttachmentTile extends StatelessWidget {
                   ],
                 ),
               ],
-            ),
-            const SizedBox(height: 8),
-            SliderTheme(
-              data: SliderTheme.of(context).copyWith(
-                activeTrackColor: const Color(0xFFFD8392),
-                thumbColor: const Color(0xFFFD8392),
-                inactiveTrackColor: const Color(
-                  0xFFFD8392,
-                ).withValues(alpha: 0.18),
-              ),
-              child: Slider(
-                value: currentSeconds,
-                min: 0,
-                max: maxSeconds,
-                onChanged: onSeek == null
-                    ? null
-                    : (value) => onSeek!(Duration(seconds: value.round())),
-              ),
-            ),
-            Row(
+            );
+
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _formatDuration(position),
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                Row(
+                  children: [
+                    ReorderableDragStartListener(
+                      index: index,
+                      child: const Padding(
+                        padding: EdgeInsets.only(right: 4),
+                        child: Icon(Icons.drag_handle, color: Colors.grey),
+                      ),
+                    ),
+                    Checkbox(
+                      value: attachment.isReviewed,
+                      onChanged: (_) => onToggleReviewed(),
+                      activeColor: const Color(0xFFFD8392),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    IconButton.filledTonal(
+                      onPressed: onPlayPause,
+                      icon: Icon(isPlaying ? Icons.pause : Icons.play_arrow),
+                      tooltip: isPlaying ? 'Pausar' : 'Reproducir',
+                    ),
+                    const SizedBox(width: 8),
+                    title,
+                    if (!compact) actions,
+                  ],
                 ),
-                const Spacer(),
-                Text(
-                  _formatDuration(duration),
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final value in const [0.5, 1.0, 1.5, 2.0])
-                  ChoiceChip(
-                    label: Text('${_formatSpeed(value)}x'),
-                    selected: isActive && speed == value,
-                    onSelected: (_) => onSpeedChanged(value),
-                    selectedColor: const Color(
+                if (compact) ...[
+                  const SizedBox(height: 8),
+                  Align(alignment: Alignment.centerRight, child: actions),
+                ],
+                const SizedBox(height: 8),
+                SliderTheme(
+                  data: SliderTheme.of(context).copyWith(
+                    activeTrackColor: const Color(0xFFFD8392),
+                    thumbColor: const Color(0xFFFD8392),
+                    inactiveTrackColor: const Color(
                       0xFFFD8392,
                     ).withValues(alpha: 0.18),
-                    checkmarkColor: const Color(0xFFFD8392),
                   ),
+                  child: Slider(
+                    value: currentSeconds,
+                    min: 0,
+                    max: maxSeconds,
+                    onChanged: onSeek == null
+                        ? null
+                        : (value) => onSeek!(Duration(seconds: value.round())),
+                  ),
+                ),
+                Row(
+                  children: [
+                    Text(
+                      _formatDuration(position),
+                      maxLines: 1,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                    const Spacer(),
+                    Text(
+                      _formatDuration(duration),
+                      maxLines: 1,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    for (final value in const [0.5, 1.0, 1.5, 2.0])
+                      ChoiceChip(
+                        label: Text('${_formatSpeed(value)}x'),
+                        selected: isActive && speed == value,
+                        onSelected: (_) => onSpeedChanged(value),
+                        selectedColor: const Color(
+                          0xFFFD8392,
+                        ).withValues(alpha: 0.18),
+                        checkmarkColor: const Color(0xFFFD8392),
+                      ),
+                  ],
+                ),
               ],
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
