@@ -1,0 +1,32 @@
+# Keep text files stable across Windows/Linux development.
+* text=auto
+
+# Source and project configuration use LF.
+*.dart text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.gradle text eol=lf
+*.gradle.kts text eol=lf
+*.sql text eol=lf
+*.md text eol=lf
+
+# Flutter generated plugin registrants should not churn between OSes.
+*.cc text eol=lf
+*.h text eol=lf
+*.cmake text eol=lf
+*.swift text eol=lf
+
+# Platform/project files.
+*.xml text eol=lf
+*.properties text eol=lf
+*.plist text eol=lf
+*.json text eol=lf
+
+# Binary assets.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.jar binary
+*.keystore binary

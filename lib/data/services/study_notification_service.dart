@@ -1,10 +1,36 @@
-import 'dart:typed_data';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import '../models/study.dart';
+
+abstract class StudyNotificationDelegate {
+  Future<void> showTimerFinished({StudyAlarmTone tone = StudyAlarmTone.system});
+
+  Future<void> scheduleTimerFinished(
+    DateTime finishesAt, {
+    StudyAlarmTone tone = StudyAlarmTone.system,
+  });
+
+  Future<void> showActiveTimer({
+    required int remainingSeconds,
+    required bool paused,
+  });
+
+  Future<void> cancelActiveTimer();
+
+  Future<void> cancelTimerFinishedAlarm();
+
+  Future<void> scheduleStudyReminder({
+    required int id,
+    required DateTime reminderAt,
+    required String title,
+    required String body,
+  });
+
+  Future<void> cancelReminder(int id);
+}
 
 class StudyNotificationService {
   static const int timerNotificationId = 9101;
@@ -13,6 +39,12 @@ class StudyNotificationService {
   static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
+  static StudyNotificationDelegate? _debugDelegate;
+
+  @visibleForTesting
+  static void setDebugDelegate(StudyNotificationDelegate? delegate) {
+    _debugDelegate = delegate;
+  }
 
   static Future<void> initialize() async {
     if (_initialized) return;
@@ -37,6 +69,11 @@ class StudyNotificationService {
   static Future<void> showTimerFinished({
     StudyAlarmTone tone = StudyAlarmTone.system,
   }) async {
+    final delegate = _debugDelegate;
+    if (delegate != null) {
+      await delegate.showTimerFinished(tone: tone);
+      return;
+    }
     await initialize();
     await _notifications.show(
       timerFinishedNotificationId,
@@ -50,6 +87,11 @@ class StudyNotificationService {
     DateTime finishesAt, {
     StudyAlarmTone tone = StudyAlarmTone.system,
   }) async {
+    final delegate = _debugDelegate;
+    if (delegate != null) {
+      await delegate.scheduleTimerFinished(finishesAt, tone: tone);
+      return;
+    }
     await initialize();
     if (!finishesAt.isAfter(DateTime.now())) return;
     await _notifications.zonedSchedule(
@@ -66,6 +108,14 @@ class StudyNotificationService {
     required int remainingSeconds,
     required bool paused,
   }) async {
+    final delegate = _debugDelegate;
+    if (delegate != null) {
+      await delegate.showActiveTimer(
+        remainingSeconds: remainingSeconds,
+        paused: paused,
+      );
+      return;
+    }
     await initialize();
     final minutes = (remainingSeconds / 60).ceil().clamp(0, 9999);
     await _notifications.show(
@@ -77,11 +127,21 @@ class StudyNotificationService {
   }
 
   static Future<void> cancelActiveTimer() async {
+    final delegate = _debugDelegate;
+    if (delegate != null) {
+      await delegate.cancelActiveTimer();
+      return;
+    }
     await initialize();
     await _notifications.cancel(timerNotificationId);
   }
 
   static Future<void> cancelTimerFinishedAlarm() async {
+    final delegate = _debugDelegate;
+    if (delegate != null) {
+      await delegate.cancelTimerFinishedAlarm();
+      return;
+    }
     await initialize();
     await _notifications.cancel(timerFinishedNotificationId);
   }
@@ -92,6 +152,16 @@ class StudyNotificationService {
     required String title,
     required String body,
   }) async {
+    final delegate = _debugDelegate;
+    if (delegate != null) {
+      await delegate.scheduleStudyReminder(
+        id: id,
+        reminderAt: reminderAt,
+        title: title,
+        body: body,
+      );
+      return;
+    }
     await initialize();
     if (!reminderAt.isAfter(DateTime.now())) return;
     await _notifications.zonedSchedule(
@@ -105,6 +175,11 @@ class StudyNotificationService {
   }
 
   static Future<void> cancelReminder(int id) async {
+    final delegate = _debugDelegate;
+    if (delegate != null) {
+      await delegate.cancelReminder(id);
+      return;
+    }
     await initialize();
     await _notifications.cancel(id);
   }

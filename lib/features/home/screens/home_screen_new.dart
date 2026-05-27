@@ -79,7 +79,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Mensaje actualizado ❤️'),
+                    content: Text('Mensaje actualizado â¤ï¸'),
                     duration: Duration(seconds: 2),
                     backgroundColor: Color(0xFFFD8392),
                   ),
@@ -163,7 +163,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                           border: Border.all(
                             color: const Color(
                               0xFFFD8392,
-                            ).withOpacity(isRoomConnected ? 0.3 : 0),
+                            ).withValues(alpha: isRoomConnected ? 0.3 : 0),
                           ),
                         ),
                         child: Row(
@@ -187,7 +187,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                               Icon(
                                 Icons.edit,
                                 size: 20,
-                                color: const Color(0xFFFD8392).withOpacity(0.7),
+                                color: const Color(
+                                  0xFFFD8392,
+                                ).withValues(alpha: 0.7),
                               ),
                           ],
                         ),
@@ -219,10 +221,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                       colors: [
                                         const Color(
                                           0xFFFD8392,
-                                        ).withOpacity(0.05),
+                                        ).withValues(alpha: 0.05),
                                         const Color(
                                           0xFFF7C0C9,
-                                        ).withOpacity(0.1),
+                                        ).withValues(alpha: 0.1),
                                       ],
                                     ),
                                   ),
@@ -327,7 +329,10 @@ class _EmptyMessageCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(
-            colors: [const Color(0xFFFD8392).withOpacity(0.03), Colors.white],
+            colors: [
+              const Color(0xFFFD8392).withValues(alpha: 0.03),
+              Colors.white,
+            ],
           ),
         ),
         padding: const EdgeInsets.all(16),
@@ -337,11 +342,11 @@ class _EmptyMessageCard extends StatelessWidget {
             Icon(
               Icons.mail_outline,
               size: 32,
-              color: const Color(0xFFFD8392).withOpacity(0.4),
+              color: const Color(0xFFFD8392).withValues(alpha: 0.4),
             ),
             const SizedBox(height: 8),
             Text(
-              'Tu pareja aún no te ha dejado un mensaje ❤️',
+              'Tu pareja aÃºn no te ha dejado un mensaje â¤ï¸',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
@@ -498,7 +503,7 @@ class _HomeCardState extends State<_HomeCard> with TickerProviderStateMixin {
           scale: _tapAnimation.value,
           child: Card(
             elevation: 8,
-            shadowColor: widget.color.withOpacity(0.3),
+            shadowColor: widget.color.withValues(alpha: 0.3),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
             ),
@@ -508,14 +513,14 @@ class _HomeCardState extends State<_HomeCard> with TickerProviderStateMixin {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Colors.white, widget.color.withOpacity(0.05)],
+                  colors: [Colors.white, widget.color.withValues(alpha: 0.05)],
                 ),
               ),
               child: InkWell(
                 onTap: _handleTap,
                 borderRadius: BorderRadius.circular(20),
-                splashColor: widget.color.withOpacity(0.1),
-                highlightColor: widget.color.withOpacity(0.05),
+                splashColor: widget.color.withValues(alpha: 0.1),
+                highlightColor: widget.color.withValues(alpha: 0.05),
                 child: Padding(
                   padding: const EdgeInsets.all(20.0),
                   child: Column(
@@ -524,7 +529,7 @@ class _HomeCardState extends State<_HomeCard> with TickerProviderStateMixin {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: widget.color.withOpacity(0.1),
+                          color: widget.color.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Icon(widget.icon, size: 32, color: widget.color),

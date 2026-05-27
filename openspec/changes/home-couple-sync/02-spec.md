@@ -1,183 +1,81 @@
 # Spec: home-couple-sync
 
+## Current Baseline
+
+The implemented baseline uses `couple_rooms` as the single Supabase source for shared couple state and one-to-one messages.
+
 ## Requirements
 
-### 1. Custom Shared Message (home_couple_sync_01)
+### 1. Custom Shared Message
 
-**Requirement**: Users can edit a shared message that appears as the Home screen title.
+Users can edit a shared message that appears as the Home screen title.
 
-**User Story**:
+Acceptance criteria:
 
-- As a couple user, I want to set a custom message (e.g., "Mi amor" instead of "Tu espacio de pareja") so that the Home screen feels more personal.
+- [x] Home screen reads the active room custom message.
+- [x] Edit dialog exists for updating the custom message.
+- [x] Save persists to `couple_rooms.custom_message`.
+- [x] Room state caches the message locally for offline fallback.
+- [x] Room stream updates partner devices through `couple_rooms` realtime.
 
-**Acceptance Criteria**:
+### 2. Incoming Partner Messages
 
-- [ ] Edit button (pencil icon) appears next to the custom message on Home screen
-- [ ] Tapping Edit opens a modal with a text field
-- [ ] Text is pre-filled with current custom_message
-- [ ] Save button persists message to Supabase couple_rooms.custom_message
-- [ ] On success, message updates on Home with fade animation
-- [ ] If offline, message is cached locally (shared_preferences key: couple_message)
-- [ ] If offline and first load, show fallback: "Tu espacio de pareja"
-- [ ] Real-time sync: changes appear on partner's Home within 2 seconds
+Users can send a private latest-message value to their partner.
 
-**Scenarios**:
+Acceptance criteria:
 
-1. User A edits message to "Mi amor" → saved to Supabase → User B's Home shows "Mi amor" within 2s
-2. User A offline, edits message locally → goes online → syncs to Supabase and B's device
-3. Both offline → each sees their cached copy; on sync, User A's latest version wins (last-write)
+- [x] Pareja screen exposes a send message action.
+- [x] Message send resolves the sender's room role.
+- [x] If sender is `user1_id`, content is stored in `message_for_user2`.
+- [x] If sender is `user2_id`, content is stored in `message_for_user1`.
+- [x] Sender does not read their own outbound column as an incoming message.
+- [x] Offline failures are queued in local storage for retry.
 
----
+### 3. Persistence & Sync
 
-### 2. Incoming Partner Messages (home_couple_sync_02)
+Acceptance criteria:
 
-**Requirement**: Users can send a message to their partner that appears only on the partner's Home (not the sender's).
+- [x] `couple_rooms` includes `custom_message`, `custom_message_updated_at`, `message_for_user1`, `message_for_user2`, and `message_updated_at`.
+- [x] RLS allows authenticated room members to read/update room-scoped shared state.
+- [x] Realtime publication includes `couple_rooms`.
+- [x] No `couple_messages` table is required for the accepted MVP baseline.
 
-**User Story**:
+## Data Model
 
-- As a couple user, I want to send a private message to my partner that appears on their Home so we can communicate emotionally without a full chat interface.
+### `couple_rooms`
 
-**Acceptance Criteria**:
+Important fields:
 
-- [ ] Send Message button exists on Pareja screen
-- [ ] Tapping opens a modal with a text input field
-- [ ] Send button creates a couple_messages row in Supabase
-- [ ] Message appears on partner's Home (replaces or augments "Todo está en orden, amor")
-- [ ] Message does NOT appear on sender's Home (no self-messages)
-- [ ] Only latest message shown (previous messages are replaced)
-- [ ] Partner sees message in real-time (RLS/streaming)
-- [ ] Message persists until next message from same sender
-- [ ] Offline: message queued locally, sent when online
-- [ ] Optional: Confirm toast on send
-
-**Scenarios**:
-
-1. User A sends "Te amo" → appears on User B's Home → does NOT appear on A's Home
-2. User A sends "Te amo" → User A goes offline → "Te amo" still visible on B's Home
-3. User B sends reply "Yo también" → now appears on A's Home, B's Home empty (no self)
-4. User A offline, sends "Hola" → queued locally → User A goes online → sent to Supabase → appears on B's Home
-
----
-
-### 3. Persistence & Sync (home_couple_sync_03)
-
-**Requirement**: Messages persist in Supabase and sync in real-time.
-
-**Acceptance Criteria**:
-
-- [ ] couple_messages table exists with schema: id, room_id, sender_id, content, created_at, updated_at
-- [ ] RLS policy: users can insert own messages, read messages where sender_id = auth.user_id OR recipient_id = auth.user_id
-- [ ] MessageNotifier subscribes to couple_messages stream for messages NOT from current user
-- [ ] couple_rooms.custom_message updates RLS: any partner can update, both read
-- [ ] Optimistic updates: UI updates immediately while request in flight
-
----
-
-## Delta Specs (Changes to Existing)
-
-### Home Screen (lib/features/home/screens/home_screen.dart)
-
-**Remove**:
-
-- Hardcoded "Tu espacio de pareja" title
-- Hardcoded "Todo está en orden, amor" message
-
-**Add**:
-
-- Watch `roomNotifier.select((r) => r?.customMessage)` → displays custom message with edit button
-- Watch `incomingMessageProvider` → displays partner's incoming message if exists
-- EditDialog component (modal for editing custom message)
-- FadeTransition on message updates
-- Tap animation on Edit button
-
-**Behavior**:
-
-```
-Home Screen Title: [Custom Message] [Edit Button]
-Card Below: [Incoming Message from Partner] or [Empty State]
-Counts: (unchanged)
+```text
+id
+invite_code
+user1_id
+user2_id
+custom_message
+custom_message_updated_at
+message_for_user1
+message_for_user2
+message_updated_at
+relationship_start_date
+period_started_at
+created_at
+last_activity_at
 ```
 
-### Pareja Screen (lib/features/pareja/screens/pareja_screen.dart - new route/screen)
+### Local Storage Keys
 
-**Add**:
-
-- FloatingActionButton or inline button: "Enviar mensaje"
-- Tapping opens dialog with TextField
-- Send button creates couple_messages entry
-
----
-
-## Data Model: Supabase Tables
-
-### couple_rooms (extend existing)
-
-```sql
-ALTER TABLE couple_rooms ADD COLUMN custom_message TEXT DEFAULT 'Tu espacio de pareja';
-ALTER TABLE couple_rooms ADD COLUMN custom_message_updated_at TIMESTAMP;
+```text
+couple_message
+pending_messages
+current_room_id
+current_room_invite_code
+relationship_start_date
+period_started_at
 ```
 
-### couple_messages (new table)
+## Out of Scope
 
-```sql
-CREATE TABLE couple_messages (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  room_id UUID NOT NULL REFERENCES couple_rooms(id) ON DELETE CASCADE,
-  sender_id UUID NOT NULL,
-  content TEXT NOT NULL,
-  created_at TIMESTAMP DEFAULT now(),
-  updated_at TIMESTAMP DEFAULT now()
-);
-
-CREATE INDEX couple_messages_room_id ON couple_messages(room_id);
-CREATE INDEX couple_messages_sender_id ON couple_messages(sender_id);
-```
-
-### RLS Policies
-
-**couple_rooms** (custom_message):
-
-- UPDATE: any authenticated user in the room can update custom_message
-- SELECT: any authenticated user can select
-
-**couple_messages**:
-
-- INSERT: any authenticated user can insert (send own message)
-- SELECT: user can select if sender_id = auth.user_id OR if message exists for their partner
-- (Simplified: allow all authenticated users to read/write—rely on room_id foreign key)
-
----
-
-## Offline Behavior
-
-**Local Storage Keys**:
-
-- `couple_message` → stores latest custom_message (cache)
-- `pending_messages` → queue of unsent partner messages (JSON array)
-
-**Fallback**:
-
-- If offline and first load: use cached custom_message or default "Tu espacio de pareja"
-- When online: fetch latest from Supabase, overwrite local cache
-- If local > Supabase timestamp: sync local to server
-
----
-
-## Empty States & Edge Cases
-
-1. **No partner connected**: Don't show message fields (already handled by RoomNotifier)
-2. **No incoming message**: Show placeholder: "Tu pareja aún no te ha dejado un mensaje ❤️"
-3. **No custom message set**: Default: "Tu espacio de pareja"
-4. **Message too long**: Truncate to 200 chars; warn in dialog
-5. **Rapid updates**: Debounce custom_message saves (500ms)
-
----
-
-## Acceptance Criteria Summary
-
-- ✅ Custom message editable with pencil icon on Home
-- ✅ Partner messages appear on other device in < 2s
-- ✅ Self-messages don't appear on sender's Home
-- ✅ Offline fallback works
-- ✅ Tests cover: edit, send, receive, offline queue
-- ✅ No analyzer warnings
+- Message history.
+- Separate `couple_messages` table.
+- Read receipts.
+- UX changes beyond the already implemented controls.

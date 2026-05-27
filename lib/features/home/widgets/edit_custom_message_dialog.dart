@@ -6,11 +6,11 @@ class EditCustomMessageDialog extends StatefulWidget {
   final VoidCallback? onCancel;
 
   const EditCustomMessageDialog({
-    Key? key,
+    super.key,
     required this.initialValue,
     required this.onSave,
     this.onCancel,
-  }) : super(key: key);
+  });
 
   @override
   State<EditCustomMessageDialog> createState() =>

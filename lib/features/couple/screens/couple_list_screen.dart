@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter/services.dart';
-import '../../../data/connectivity/connectivity_provider.dart';
 import '../../../data/models/shared_item.dart';
 import '../../../data/providers.dart';
 

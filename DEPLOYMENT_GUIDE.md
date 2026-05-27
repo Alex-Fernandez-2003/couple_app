@@ -10,6 +10,10 @@
 
 ## What The Current Schema Uses
 
+> Baseline note: this project does not use a separate `couple_messages`
+> table. The current MVP stores the latest one-to-one message for each partner
+> directly in `couple_rooms`.
+
 1. **couple_rooms** - Room identity, shared message, and one-to-one messages
    - Room fields: `id`, `invite_code`, `name`, `created_at`, `last_activity_at`
    - User assignment: `user1_id`, `user2_id`

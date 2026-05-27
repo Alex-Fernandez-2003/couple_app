@@ -2,62 +2,36 @@
 
 ## Executive Summary
 
-Enhance the Home screen to enable real-time emotional communication between partners through two mechanisms: (1) an editable shared message that appears as the page title (replacing "Tu espacio de pareja"), synced via Supabase couple_rooms table with offline fallback; and (2) a message inbox showing unread partner messages (replacing the "Todo está en orden, amor" placeholder), persisted in a new couple_messages table.
+The accepted implementation enhances the Home and Pareja screens with room-scoped couple communication using the existing `couple_rooms` table. The final architecture does **not** create a separate `couple_messages` table. One-to-one messages are stored in `couple_rooms.message_for_user1` and `couple_rooms.message_for_user2`, with `message_updated_at` tracking the latest update.
 
-## Intent
+## Accepted Scope
 
-Currently, the Home screen is static—it displays pending counts and a fixed welcome message. Partners have no way to communicate emotionally or leave each other personalized messages. This feature fills that gap by adding bidirectional messaging with cloud sync.
+- Editable shared Home title via `couple_rooms.custom_message`.
+- Incoming partner message shown on Home.
+- Send message action from Pareja screen.
+- Offline queue in `shared_preferences` for unsent messages.
+- Local cached custom message fallback.
+- Realtime updates by streaming the active `couple_rooms` row.
+- Room-scoped RLS using `user1_id` and `user2_id` membership.
 
-## Scope
+## Explicit Non-Goals
 
-**In Scope**:
+- No `couple_messages` table in the accepted baseline.
+- No message history/threading.
+- No UX redesign.
+- No end-to-end encryption.
 
-- Add custom_message field to couple_rooms table (shared editable message)
-- Create couple_messages table (sender → recipient unread messages)
-- UI: Add Edit button + modal dialog for custom message on Home
-- UI: Show incoming partner message in Home (replaces "Todo está en orden, amor")
-- UI: Add Send Message button in Pareja screen
-- Provider: Create MessageNotifier to handle message state (AsyncValue pattern)
-- Provider: Extend RoomNotifier to include custom_message sync
-- Real-time streaming: Subscribe to couple_messages for active recipient
-- Offline fallback: Last fetched custom_message stored in shared_preferences
+## Architecture Decision
 
-**Out of Scope**:
-
-- Message history/threading (single message at a time)
-- Image/emoji support in messages
-- Message read/unread indicators (UI only)
-- End-to-end encryption
-
-## Approach
-
-1. **Database**: Extend Supabase schema with couple_messages table
-2. **State Management**: Create MessageNotifier provider using Riverpod AsyncValue
-3. **Sync**: Extend RoomNotifier to fetch and cache custom_message; stream couple_messages in real-time
-4. **UI**: Add EditDialog for custom message + animate on update; replace hardcoded message with provider watch
-5. **Offline**: Use shared_preferences to cache custom_message locally
-
-## Tradeoffs
-
-| Decision                          | Pro                                     | Con                           |
-| --------------------------------- | --------------------------------------- | ----------------------------- |
-| Single message (not threaded)     | Simpler UI, forces emotional directness | Limited conversation depth    |
-| Anonymous auth (no login visible) | Maintains existing UX                   | Can't link to real identities |
-| Offline fallback (local cache)    | Works without connection                | May show stale message        |
-| Real-time streaming               | Instant updates                         | Requires active subscription  |
-
-## Why This Design
-
-- **Emotional directness**: One message at a time ensures partners read and respond meaningfully
-- **Cloud-first with offline grace**: Supabase backend scales + local fallback prevents blank screens
-- **Minimal disruption**: Reuses existing patterns (Riverpod, go_router, shared_preferences)
-- **Consistent architecture**: Follows NotesNotifier/BoxesNotifier patterns already in codebase
+| Decision | Why |
+|---|---|
+| Store messages in `couple_rooms.message_for_user1/message_for_user2` | Simpler MVP schema for one latest message per partner. |
+| Stream `couple_rooms` instead of a separate messages table | Keeps realtime state aligned with room membership and custom message updates. |
+| Keep offline queue local | Preserves send intent while the device is offline without introducing new backend tables. |
 
 ## Success Criteria
 
-- ✅ Custom message editable and syncs between devices within 2 seconds
-- ✅ Incoming partner messages appear immediately on Home
-- ✅ Sending a message to partner shows on their Home (not sender's)
-- ✅ Offline mode: custom message and last message visible with local cache
-- ✅ Tests pass (unit + widget)
-- ✅ No console errors or analyzer warnings
+- Custom Home message can be edited and cached locally.
+- Partner messages do not appear on the sender's Home.
+- Latest message for each recipient is available from `couple_rooms`.
+- Tests pass and analyzer is clean.

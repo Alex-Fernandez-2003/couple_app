@@ -28,7 +28,7 @@ class AppTheme {
         color: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         elevation: 4,
-        shadowColor: const Color(0xFFFD8392).withOpacity(0.1),
+        shadowColor: const Color(0xFFFD8392).withValues(alpha: 0.1),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: primary,
@@ -41,7 +41,7 @@ class AppTheme {
           backgroundColor: primary,
           foregroundColor: Colors.white,
           elevation: 2,
-          shadowColor: primary.withOpacity(0.3),
+          shadowColor: primary.withValues(alpha: 0.3),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),

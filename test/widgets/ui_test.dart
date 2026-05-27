@@ -74,15 +74,15 @@ void main() {
     test('Card theme has rounded corners', () {
       final theme = AppTheme.light();
 
-      expect(theme.cardTheme?.shape, isA<RoundedRectangleBorder>());
+      expect(theme.cardTheme.shape, isA<RoundedRectangleBorder>());
     });
 
     test('Input decoration has correct styling', () {
       final theme = AppTheme.light();
 
-      expect(theme.inputDecorationTheme?.filled, isTrue);
+      expect(theme.inputDecorationTheme.filled, isTrue);
       expect(
-        theme.inputDecorationTheme?.fillColor,
+        theme.inputDecorationTheme.fillColor,
         equals(const Color(0xFFF7F1F3)),
       );
     });
