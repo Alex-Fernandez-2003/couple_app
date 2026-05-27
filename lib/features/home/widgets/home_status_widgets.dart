@@ -27,7 +27,7 @@ class _EmptyMessageCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Tu pareja aÃºn no te ha dejado un mensaje â¤ï¸',
+              'Tu pareja aún no te ha dejado un mensaje ❤️',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
@@ -66,7 +66,7 @@ class _RelationshipTrackerCard extends StatelessWidget {
         : _timeTogether(relationshipStartDate!, DateTime.now());
     final periodText = periodStartedAt == null
         ? 'Sin periodo registrado'
-        : 'Periodo iniciado hace ${_daysSince(periodStartedAt!)} dÃ­as';
+        : 'Periodo iniciado hace ${_daysSince(periodStartedAt!)} días';
 
     return Card(
       elevation: 2,
@@ -92,8 +92,8 @@ class _RelationshipTrackerCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     together == null
-                        ? 'Agrega la fecha en que empezÃ³ su historia.'
-                        : '${together.years} aÃ±os, ${together.months} meses y ${together.days} dÃ­as juntos',
+                        ? 'Agrega la fecha en que empezó su historia.'
+                        : '${together.years} años, ${together.months} meses y ${together.days} días juntos',
                     style: const TextStyle(fontSize: 15),
                   ),
                 ),

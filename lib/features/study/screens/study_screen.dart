@@ -45,6 +45,16 @@ class _StudyScreenState extends ConsumerState<StudyScreen>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<String?>(studyNotificationWarningProvider, (previous, next) {
+      if (next == null || next == previous) return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(next), behavior: SnackBarBehavior.floating),
+        );
+        ref.read(studyNotificationWarningProvider.notifier).state = null;
+      });
+    });
     ref.listen<AsyncValue<StudyState>>(studyProvider, (previous, next) {
       if (previous?.value == null) return;
       final oldGoals = previous?.value?.progressGoals ?? const [];

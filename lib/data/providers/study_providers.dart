@@ -43,9 +43,11 @@ class StudyState {
 }
 
 class StudyNotifier extends StateNotifier<AsyncValue<StudyState>> {
-  StudyNotifier() : super(const AsyncValue.loading()) {
+  StudyNotifier(this.ref) : super(const AsyncValue.loading()) {
     _loadStudy();
   }
+
+  final Ref ref;
 
   Future<void> _loadStudy() async {
     try {
@@ -251,14 +253,20 @@ class StudyNotifier extends StateNotifier<AsyncValue<StudyState>> {
   Future<void> _scheduleReminder(StudyGoal goal) async {
     final reminder = goal.reminderAt;
     if (reminder == null) return;
-    await StudyNotificationService.scheduleStudyReminder(
-      id: _notificationId(goal.id),
-      reminderAt: reminder,
-      title: 'Hora de estudiar',
-      body: goal.topics.isEmpty
-          ? 'Una sesión pequeña también cuenta.'
-          : 'Hoy toca estudiar: ${goal.topics.join(', ')}',
-    );
+    try {
+      await StudyNotificationService.scheduleStudyReminder(
+        id: _notificationId(goal.id),
+        reminderAt: reminder,
+        title: 'Hora de estudiar',
+        body: goal.topics.isEmpty
+            ? 'Una sesión pequeña también cuenta.'
+            : 'Hoy toca estudiar: ${goal.topics.join(', ')}',
+      );
+      _publishNotificationWarning(ref);
+    } catch (_) {
+      ref.read(studyNotificationWarningProvider.notifier).state =
+          'La meta fue guardada, pero no pude programar el recordatorio en este dispositivo.';
+    }
   }
 
   int _progressForGoal(StudyProgressGoal goal, List<StudySession> sessions) {
@@ -503,19 +511,29 @@ class StudyTimerNotifier extends StateNotifier<StudyTimerState> {
   Future<void> _showActiveNotification() async {
     final remaining = state.remainingSeconds;
     _lastNotifiedMinute = (remaining / 60).ceil();
-    await StudyNotificationService.showActiveTimer(
-      remainingSeconds: remaining,
-      paused: state.status == StudyTimerStatus.paused,
-    );
+    try {
+      await StudyNotificationService.showActiveTimer(
+        remainingSeconds: remaining,
+        paused: state.status == StudyTimerStatus.paused,
+      );
+    } catch (_) {
+      // Timer state must keep working even when Android blocks notifications.
+    }
   }
 
   Future<void> _scheduleFinishAlarm() async {
     final startedAt = state.startedAt;
     if (startedAt == null || state.status != StudyTimerStatus.running) return;
-    await StudyNotificationService.scheduleTimerFinished(
-      startedAt.add(Duration(seconds: state.durationSeconds)),
-      tone: await LocalStorageService.getStudyAlarmTone(),
-    );
+    try {
+      await StudyNotificationService.scheduleTimerFinished(
+        startedAt.add(Duration(seconds: state.durationSeconds)),
+        tone: await LocalStorageService.getStudyAlarmTone(),
+      );
+      _publishNotificationWarning(ref);
+    } catch (_) {
+      ref.read(studyNotificationWarningProvider.notifier).state =
+          'El temporizador fue iniciado, pero no pude programar la alarma de finalización en este dispositivo.';
+    }
   }
 
   @override
@@ -527,8 +545,16 @@ class StudyTimerNotifier extends StateNotifier<StudyTimerState> {
 
 final studyProvider =
     StateNotifierProvider<StudyNotifier, AsyncValue<StudyState>>(
-      (ref) => StudyNotifier(),
+      (ref) => StudyNotifier(ref),
     );
+
+final studyNotificationWarningProvider = StateProvider<String?>((ref) => null);
+
+void _publishNotificationWarning(Ref ref) {
+  final warning = StudyNotificationService.consumeLastScheduleWarning();
+  if (warning == null) return;
+  ref.read(studyNotificationWarningProvider.notifier).state = warning;
+}
 
 final studyTimerProvider =
     StateNotifierProvider<StudyTimerNotifier, StudyTimerState>(

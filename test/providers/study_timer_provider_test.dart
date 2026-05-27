@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:couple_app/data/models/study.dart';
@@ -133,5 +134,75 @@ void main() {
       expect(notifications.cancelActiveTimerCount, 1);
       expect(notifications.cancelTimerFinishedAlarmCount, 1);
     });
+
+    test('exact alarm failure does not block manual timer start', () async {
+      StudyNotificationService.setDebugDelegate(
+        ExactAlarmFailingStudyNotificationDelegate(),
+      );
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await readLoaded(container, studyProvider);
+
+      await container
+          .read(studyTimerProvider.notifier)
+          .startTimer(totalSeconds: 30);
+
+      expect(
+        container.read(studyTimerProvider).status,
+        StudyTimerStatus.running,
+      );
+      expect(
+        (await LocalStorageService.getStudyTimerState())?.status,
+        StudyTimerStatus.running,
+      );
+    });
+
+    test('exact alarm failure does not block daily goal save', () async {
+      StudyNotificationService.setDebugDelegate(
+        ExactAlarmFailingStudyNotificationDelegate(),
+      );
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await readLoaded(container, studyProvider);
+
+      await container
+          .read(studyProvider.notifier)
+          .addGoal(
+            weekday: DateTime.monday,
+            durationMinutes: 30,
+            topics: const ['Periodoncia'],
+            reminderAt: DateTime.now().add(const Duration(hours: 1)),
+          );
+
+      final state = container.read(studyProvider).requireValue;
+      expect(state.goals, hasLength(1));
+      expect((await LocalStorageService.getStudyGoals()), hasLength(1));
+    });
   });
+}
+
+class ExactAlarmFailingStudyNotificationDelegate
+    extends RecordingStudyNotificationDelegate {
+  static final error = PlatformException(
+    code: 'exact_alarms_not_permitted',
+    message: 'Exact alarms are not permitted',
+  );
+
+  @override
+  Future<void> scheduleStudyReminder({
+    required int id,
+    required DateTime reminderAt,
+    required String title,
+    required String body,
+  }) async {
+    throw error;
+  }
+
+  @override
+  Future<void> scheduleTimerFinished(
+    DateTime finishesAt, {
+    StudyAlarmTone tone = StudyAlarmTone.system,
+  }) async {
+    throw error;
+  }
 }

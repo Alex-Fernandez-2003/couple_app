@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -35,15 +36,27 @@ abstract class StudyNotificationDelegate {
 class StudyNotificationService {
   static const int timerNotificationId = 9101;
   static const int timerFinishedNotificationId = 9001;
+  static const String exactReminderFallbackMessage =
+      'El recordatorio fue guardado, pero Android puede retrasarlo si no permite alarmas exactas.';
+  static const String exactTimerFallbackMessage =
+      'El temporizador fue iniciado, pero Android puede retrasar la alarma si no permite alarmas exactas.';
 
   static final FlutterLocalNotificationsPlugin _notifications =
       FlutterLocalNotificationsPlugin();
   static bool _initialized = false;
   static StudyNotificationDelegate? _debugDelegate;
+  static String? _lastScheduleWarning;
 
   @visibleForTesting
   static void setDebugDelegate(StudyNotificationDelegate? delegate) {
     _debugDelegate = delegate;
+    _lastScheduleWarning = null;
+  }
+
+  static String? consumeLastScheduleWarning() {
+    final warning = _lastScheduleWarning;
+    _lastScheduleWarning = null;
+    return warning;
   }
 
   static Future<void> initialize() async {
@@ -89,18 +102,26 @@ class StudyNotificationService {
   }) async {
     final delegate = _debugDelegate;
     if (delegate != null) {
-      await delegate.scheduleTimerFinished(finishesAt, tone: tone);
+      try {
+        await delegate.scheduleTimerFinished(finishesAt, tone: tone);
+      } on PlatformException catch (error) {
+        if (_isExactAlarmPermissionError(error)) {
+          _lastScheduleWarning = exactTimerFallbackMessage;
+          return;
+        }
+        rethrow;
+      }
       return;
     }
     await initialize();
     if (!finishesAt.isAfter(DateTime.now())) return;
-    await _notifications.zonedSchedule(
-      timerFinishedNotificationId,
-      'Sesión terminada',
-      'Buen trabajo. Respira un poquito y registra tu avance.',
-      tz.TZDateTime.from(finishesAt, tz.local),
-      _alarmDetails(tone),
-      androidScheduleMode: AndroidScheduleMode.alarmClock,
+    await _scheduleWithExactFallback(
+      id: timerFinishedNotificationId,
+      title: 'Sesión terminada',
+      body: 'Buen trabajo. Respira un poquito y registra tu avance.',
+      scheduledAt: finishesAt,
+      details: _alarmDetails(tone),
+      fallbackMessage: exactTimerFallbackMessage,
     );
   }
 
@@ -154,23 +175,31 @@ class StudyNotificationService {
   }) async {
     final delegate = _debugDelegate;
     if (delegate != null) {
-      await delegate.scheduleStudyReminder(
-        id: id,
-        reminderAt: reminderAt,
-        title: title,
-        body: body,
-      );
+      try {
+        await delegate.scheduleStudyReminder(
+          id: id,
+          reminderAt: reminderAt,
+          title: title,
+          body: body,
+        );
+      } on PlatformException catch (error) {
+        if (_isExactAlarmPermissionError(error)) {
+          _lastScheduleWarning = exactReminderFallbackMessage;
+          return;
+        }
+        rethrow;
+      }
       return;
     }
     await initialize();
     if (!reminderAt.isAfter(DateTime.now())) return;
-    await _notifications.zonedSchedule(
-      id,
-      title,
-      body,
-      tz.TZDateTime.from(reminderAt, tz.local),
-      _details(),
-      androidScheduleMode: AndroidScheduleMode.alarmClock,
+    await _scheduleWithExactFallback(
+      id: id,
+      title: title,
+      body: body,
+      scheduledAt: reminderAt,
+      details: _details(),
+      fallbackMessage: exactReminderFallbackMessage,
     );
   }
 
@@ -194,6 +223,94 @@ class StudyNotificationService {
     );
     const ios = DarwinNotificationDetails();
     return const NotificationDetails(android: android, iOS: ios);
+  }
+
+  static Future<void> _scheduleWithExactFallback({
+    required int id,
+    required String title,
+    required String body,
+    required DateTime scheduledAt,
+    required NotificationDetails details,
+    required String fallbackMessage,
+  }) async {
+    final android = _notifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+    final tzDate = tz.TZDateTime.from(scheduledAt, tz.local);
+    if (android == null) {
+      await _scheduleInexact(
+        id: id,
+        title: title,
+        body: body,
+        scheduledAt: tzDate,
+        details: details,
+      );
+      return;
+    }
+
+    final canScheduleExact =
+        await android.canScheduleExactNotifications() ?? true;
+    if (!canScheduleExact) {
+      await _scheduleInexact(
+        id: id,
+        title: title,
+        body: body,
+        scheduledAt: tzDate,
+        details: details,
+      );
+      _lastScheduleWarning = fallbackMessage;
+      return;
+    }
+
+    try {
+      await _notifications.zonedSchedule(
+        id,
+        title,
+        body,
+        tzDate,
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      );
+    } on PlatformException catch (error) {
+      if (!_isExactAlarmPermissionError(error)) rethrow;
+      await _scheduleInexact(
+        id: id,
+        title: title,
+        body: body,
+        scheduledAt: tzDate,
+        details: details,
+      );
+      _lastScheduleWarning = fallbackMessage;
+    }
+  }
+
+  static Future<void> _scheduleInexact({
+    required int id,
+    required String title,
+    required String body,
+    required tz.TZDateTime scheduledAt,
+    required NotificationDetails details,
+  }) async {
+    await _notifications.zonedSchedule(
+      id,
+      title,
+      body,
+      scheduledAt,
+      details,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+    );
+  }
+
+  static bool _isExactAlarmPermissionError(PlatformException error) {
+    final raw = [
+      error.code,
+      error.message,
+      error.details?.toString(),
+    ].whereType<String>().join(' ').toLowerCase();
+    return raw.contains('exact_alarms_not_permitted') ||
+        raw.contains('exact alarms are not permitted') ||
+        raw.contains('schedule_exact_alarm');
   }
 
   static NotificationDetails _activeTimerDetails() {

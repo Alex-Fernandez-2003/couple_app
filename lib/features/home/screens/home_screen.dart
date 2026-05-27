@@ -82,7 +82,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Mensaje actualizado â¤ï¸'),
+                    content: Text('Mensaje actualizado ❤️'),
                     duration: Duration(seconds: 2),
                     backgroundColor: Color(0xFFFD8392),
                   ),

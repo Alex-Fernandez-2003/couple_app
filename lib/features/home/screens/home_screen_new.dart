@@ -79,7 +79,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
               if (context.mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Mensaje actualizado â¤ï¸'),
+                    content: Text('Mensaje actualizado ❤️'),
                     duration: Duration(seconds: 2),
                     backgroundColor: Color(0xFFFD8392),
                   ),
@@ -346,7 +346,7 @@ class _EmptyMessageCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Tu pareja aÃºn no te ha dejado un mensaje â¤ï¸',
+              'Tu pareja aún no te ha dejado un mensaje ❤️',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
