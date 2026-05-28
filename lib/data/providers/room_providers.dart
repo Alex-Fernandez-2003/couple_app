@@ -14,7 +14,12 @@ enum RoomStatus { idle, waiting, connected, error }
 
 // ==================== Auth Provider ====================
 final currentUserIdProvider = Provider<String?>((ref) {
-  return Supabase.instance.client.auth.currentUser?.id;
+  if (!SupabaseService.isConfigured) return null;
+  try {
+    return Supabase.instance.client.auth.currentUser?.id;
+  } catch (_) {
+    return null;
+  }
 });
 
 class RoomState {

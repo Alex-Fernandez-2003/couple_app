@@ -148,6 +148,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ],
               const Spacer(),
+              FilledButton.icon(
+                onPressed: () => context.go('/home'),
+                icon: const Icon(Icons.home_outlined),
+                label: const Text('Usar funciones locales'),
+              ),
+              const SizedBox(height: 12),
               ElevatedButton(
                 onPressed: () => context.go('/create-room'),
                 child: const Text('Crear conexión'),

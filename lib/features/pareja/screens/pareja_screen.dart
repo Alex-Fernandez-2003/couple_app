@@ -458,12 +458,43 @@ class _ParejaScreenState extends ConsumerState<ParejaScreen> {
                                     ),
                                     const SizedBox(height: 12),
                                     const Text(
-                                      'Necesitas estar conectado con tu pareja\npara enviar mensajes y agregar tareas',
+                                      'Sin conexión',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    const Text(
+                                      'Conecta una sala cuando quieras enviar mensajes y compartir tareas.',
                                       textAlign: TextAlign.center,
                                       style: TextStyle(
                                         color: Colors.grey,
                                         fontSize: 14,
                                       ),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Wrap(
+                                      alignment: WrapAlignment.center,
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: [
+                                        ElevatedButton.icon(
+                                          onPressed: () =>
+                                              context.go('/create-room'),
+                                          icon: const Icon(Icons.add_link),
+                                          label: const Text('Crear conexión'),
+                                        ),
+                                        OutlinedButton.icon(
+                                          onPressed: () =>
+                                              context.go('/join-room'),
+                                          icon: const Icon(Icons.link),
+                                          label: const Text(
+                                            'Unirme con código',
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),
