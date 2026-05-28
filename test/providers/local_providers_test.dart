@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:couple_app/data/models/box_model.dart';
+import 'package:couple_app/data/models/calendar.dart';
 import 'package:couple_app/data/models/note.dart';
 import 'package:couple_app/data/models/study.dart';
 import 'package:couple_app/data/providers.dart';
+import 'package:couple_app/data/services/calendar_notification_service.dart';
 import 'package:couple_app/data/services/local_storage_service.dart';
 import 'package:couple_app/data/services/study_notification_service.dart';
 
@@ -248,6 +251,109 @@ void main() {
     });
   });
 
+  group('calendarProvider', () {
+    late RecordingCalendarNotificationDelegate notifications;
+
+    setUp(() async {
+      await resetStorage();
+      notifications = RecordingCalendarNotificationDelegate();
+      CalendarNotificationService.setDebugDelegate(notifications);
+    });
+
+    tearDown(() {
+      CalendarNotificationService.setDebugDelegate(null);
+    });
+
+    test('marks days and persists local calendar marks', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await readLoaded(container, calendarProvider);
+      final notifier = container.read(calendarProvider.notifier);
+      final date = DateTime(2026, 5, 28);
+
+      await notifier.toggleDayMark(date);
+      expect(
+        container.read(calendarProvider).requireValue.isMarked(date),
+        true,
+      );
+      expect(
+        (await LocalStorageService.getCalendarDayMarks()).single.date,
+        normalizeCalendarDate(date),
+      );
+
+      await notifier.toggleDayMark(date);
+      expect(
+        container.read(calendarProvider).requireValue.isMarked(date),
+        false,
+      );
+      expect(await LocalStorageService.getCalendarDayMarks(), isEmpty);
+    });
+
+    test(
+      'creates edits deletes reminders and schedules notifications',
+      () async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+        await readLoaded(container, calendarProvider);
+        final notifier = container.read(calendarProvider.notifier);
+        final reminderAt = DateTime.now().add(const Duration(days: 1));
+
+        await notifier.addReminder(
+          title: 'Dentist',
+          description: 'Bring notes',
+          reminderAt: reminderAt,
+        );
+        var state = container.read(calendarProvider).requireValue;
+        expect(state.reminders, hasLength(1));
+        expect(notifications.scheduledReminders, hasLength(1));
+        expect(
+          (await LocalStorageService.getCalendarReminders()),
+          hasLength(1),
+        );
+
+        final updatedAt = reminderAt.add(const Duration(hours: 1));
+        await notifier.updateReminder(
+          state.reminders.single.copyWith(
+            title: 'Updated',
+            reminderAt: updatedAt,
+          ),
+        );
+        state = container.read(calendarProvider).requireValue;
+        expect(state.reminders.single.title, 'Updated');
+        expect(notifications.scheduledReminders, hasLength(2));
+
+        await notifier.deleteReminder(state.reminders.single);
+        expect(
+          container.read(calendarProvider).requireValue.reminders,
+          isEmpty,
+        );
+        expect(await LocalStorageService.getCalendarReminders(), isEmpty);
+        expect(notifications.cancelledReminderIds, isNotEmpty);
+      },
+    );
+
+    test('exact alarm failure does not block calendar reminder save', () async {
+      CalendarNotificationService.setDebugDelegate(
+        ExactAlarmFailingCalendarNotificationDelegate(),
+      );
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      await readLoaded(container, calendarProvider);
+
+      await container
+          .read(calendarProvider.notifier)
+          .addReminder(
+            title: 'Local reminder',
+            reminderAt: DateTime.now().add(const Duration(days: 1)),
+          );
+
+      final state = container.read(calendarProvider).requireValue;
+      expect(state.reminders, hasLength(1));
+      expect(state.warning, CalendarNotificationService.exactFallbackMessage);
+      expect((await LocalStorageService.getCalendarReminders()), hasLength(1));
+    });
+  });
+
   group('roomStateProvider', () {
     test(
       'restores local tracker cache without a Supabase room session',
@@ -295,4 +401,22 @@ void main() {
       expect(await LocalStorageService.getCachedPeriodStartedAt(), periodStart);
     });
   });
+}
+
+class ExactAlarmFailingCalendarNotificationDelegate
+    extends RecordingCalendarNotificationDelegate {
+  static final error = PlatformException(
+    code: 'exact_alarms_not_permitted',
+    message: 'Exact alarms are not permitted',
+  );
+
+  @override
+  Future<void> scheduleCalendarReminder({
+    required int id,
+    required DateTime reminderAt,
+    required String title,
+    required String body,
+  }) async {
+    throw error;
+  }
 }

@@ -4,6 +4,7 @@ import '../models/note.dart';
 import '../models/box_model.dart';
 import '../models/shopping_item.dart';
 import '../models/study.dart';
+import '../models/calendar.dart';
 
 class LocalStorageService {
   static const String _notesKey = 'notes_storage';
@@ -27,6 +28,8 @@ class LocalStorageService {
   static const String _studyProgressGoalsKey = 'study_progress_goals_storage';
   static const String _studyTimerStateKey = 'study_timer_state_storage';
   static const String _studyAlarmToneKey = 'study_alarm_tone_storage';
+  static const String _calendarMarksKey = 'calendar_marks_storage';
+  static const String _calendarRemindersKey = 'calendar_reminders_storage';
 
   static Future<SharedPreferences> get _prefs async =>
       await SharedPreferences.getInstance();
@@ -334,6 +337,39 @@ class LocalStorageService {
   static Future<void> clearStudyAlarmTonePath() async {
     final prefs = await _prefs;
     await prefs.remove(_studyAlarmToneKey);
+  }
+
+  // Calendar methods
+  static Future<List<CalendarDayMark>> getCalendarDayMarks() async {
+    final prefs = await _prefs;
+    final marksJson = prefs.getStringList(_calendarMarksKey) ?? [];
+    return marksJson
+        .map((json) => CalendarDayMark.fromMap(jsonDecode(json)))
+        .toList();
+  }
+
+  static Future<void> saveCalendarDayMarks(List<CalendarDayMark> marks) async {
+    final prefs = await _prefs;
+    final marksJson = marks.map((mark) => jsonEncode(mark.toMap())).toList();
+    await prefs.setStringList(_calendarMarksKey, marksJson);
+  }
+
+  static Future<List<CalendarReminder>> getCalendarReminders() async {
+    final prefs = await _prefs;
+    final remindersJson = prefs.getStringList(_calendarRemindersKey) ?? [];
+    return remindersJson
+        .map((json) => CalendarReminder.fromMap(jsonDecode(json)))
+        .toList();
+  }
+
+  static Future<void> saveCalendarReminders(
+    List<CalendarReminder> reminders,
+  ) async {
+    final prefs = await _prefs;
+    final remindersJson = reminders
+        .map((reminder) => jsonEncode(reminder.toMap()))
+        .toList();
+    await prefs.setStringList(_calendarRemindersKey, remindersJson);
   }
 
   // ==================== Offline Message Queue ====================

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:couple_app/data/models/study.dart';
+import 'package:couple_app/data/services/calendar_notification_service.dart';
 import 'package:couple_app/data/services/study_notification_service.dart';
 
 Future<void> resetStorage([Map<String, Object> values = const {}]) async {
@@ -30,6 +31,33 @@ Future<T> readLoaded<T>(ProviderContainer container, dynamic provider) async {
   }
   if (lastError != null) Error.throwWithStackTrace(lastError, lastStackTrace!);
   fail('Provider did not load a value.');
+}
+
+class RecordingCalendarNotificationDelegate
+    implements CalendarNotificationDelegate {
+  final scheduledReminders =
+      <({int id, DateTime reminderAt, String title, String body})>[];
+  final cancelledReminderIds = <int>[];
+
+  @override
+  Future<void> cancelCalendarReminder(int id) async {
+    cancelledReminderIds.add(id);
+  }
+
+  @override
+  Future<void> scheduleCalendarReminder({
+    required int id,
+    required DateTime reminderAt,
+    required String title,
+    required String body,
+  }) async {
+    scheduledReminders.add((
+      id: id,
+      reminderAt: reminderAt,
+      title: title,
+      body: body,
+    ));
+  }
 }
 
 class RecordingStudyNotificationDelegate implements StudyNotificationDelegate {

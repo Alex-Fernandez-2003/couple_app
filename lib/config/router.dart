@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../data/providers.dart';
 import '../features/boxes/screens/boxes_screen.dart';
+import '../features/calendar/screens/calendar_screen.dart';
 import '../features/couple/screens/create_room_screen.dart';
 import '../features/couple/screens/join_room_screen.dart';
 import '../features/home/screens/home_screen.dart';
@@ -46,6 +47,10 @@ final appRouter = GoRouter(
         GoRoute(
           path: '/boxes',
           builder: (context, state) => const BoxesScreen(),
+        ),
+        GoRoute(
+          path: '/calendar',
+          builder: (context, state) => const CalendarScreen(),
         ),
       ],
     ),

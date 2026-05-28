@@ -147,6 +147,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final pendingShopping = ref.watch(pendingShoppingCountProvider);
     final notesCount = ref.watch(notesCountProvider);
     final boxesCount = ref.watch(boxesCountProvider);
+    final calendarCount = ref.watch(calendarReminderCountProvider);
     final currentUserId = ref.watch(currentUserIdProvider);
 
     final customMessage = roomState.customMessage ?? 'Tu espacio de pareja';
@@ -401,6 +402,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                 ),
                                 _AnimatedHomeCard(
                                   delay: 300,
+                                  title: 'Recordatorios',
+                                  count: calendarCount,
+                                  icon: Icons.calendar_month_outlined,
+                                  color: const Color(0xFFFD8392),
+                                  onTap: () => context.go('/calendar'),
+                                ),
+                                _AnimatedHomeCard(
+                                  delay: 400,
                                   title: 'Cajas creadas',
                                   count: boxesCount,
                                   icon: Icons.inventory_2_outlined,

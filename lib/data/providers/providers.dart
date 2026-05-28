@@ -5,4 +5,5 @@ export 'notes_providers.dart';
 export 'shopping_providers.dart';
 export 'boxes_providers.dart';
 export 'study_providers.dart';
+export 'calendar_providers.dart';
 export 'connectivity_providers.dart';
