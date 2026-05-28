@@ -1,7 +1,7 @@
 part of '../screens/notes_screen.dart';
 
 class _AttachmentSectionTitle extends StatelessWidget {
-  const _AttachmentSectionTitle(this.text);
+  const _AttachmentSectionTitle(this.text, {super.key});
 
   final String text;
 

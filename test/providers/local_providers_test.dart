@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:couple_app/data/models/box_model.dart';
+import 'package:couple_app/data/models/note.dart';
 import 'package:couple_app/data/models/study.dart';
 import 'package:couple_app/data/providers.dart';
 import 'package:couple_app/data/services/local_storage_service.dart';
@@ -48,6 +49,46 @@ void main() {
         expect((await LocalStorageService.getNoteCategories()), isEmpty);
       },
     );
+
+    test('reorders audio attachments and persists the new order', () async {
+      await resetStorage();
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await readLoaded(container, notesProvider);
+      final notifier = container.read(notesProvider.notifier);
+      await notifier.addNote('Audio note', 'Many recordings');
+      final noteId = container.read(notesProvider).requireValue.notes.single.id;
+
+      for (final id in ['a', 'b', 'c', 'd']) {
+        await notifier.addAudioAttachment(
+          noteId,
+          NoteAudioAttachment(
+            id: id,
+            path: '$id.m4a',
+            duration: const Duration(seconds: 10),
+            createdAt: DateTime(2026),
+            customName: id,
+          ),
+        );
+      }
+
+      await notifier.reorderAudioAttachments(noteId, 0, 3);
+
+      final stateOrder = container
+          .read(notesProvider)
+          .requireValue
+          .notes
+          .single
+          .audioAttachments
+          .map((attachment) => attachment.id);
+      final persistedOrder = (await LocalStorageService.getNotes())
+          .single
+          .audioAttachments
+          .map((attachment) => attachment.id);
+      expect(stateOrder, ['c', 'b', 'a', 'd']);
+      expect(persistedOrder, ['c', 'b', 'a', 'd']);
+    });
   });
 
   group('boxesProvider', () {

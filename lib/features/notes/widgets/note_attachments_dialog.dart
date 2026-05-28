@@ -15,6 +15,7 @@ class _NoteAttachmentsDialogState
   final _recorder = AudioRecorder();
   final _audioPlayer = AudioPlayer();
   final _imagePicker = ImagePicker();
+  final _attachmentsScrollController = ScrollController();
   final Map<String, Duration> _positions = {};
   StreamSubscription<Duration>? _positionSubscription;
   StreamSubscription<Duration>? _durationSubscription;
@@ -68,6 +69,7 @@ class _NoteAttachmentsDialogState
     _durationSubscription?.cancel();
     _stateSubscription?.cancel();
     _completeSubscription?.cancel();
+    _attachmentsScrollController.dispose();
     _recorder.dispose();
     _audioPlayer.dispose();
     super.dispose();
@@ -303,6 +305,21 @@ class _NoteAttachmentsDialogState
         .reorderAudioAttachments(widget.noteId, oldIndex, newIndex);
   }
 
+  Future<void> _handleAttachmentReorder(
+    int oldIndex,
+    int newIndex,
+    int audioCount,
+  ) async {
+    final audioOldIndex = oldIndex - 1;
+    if (audioOldIndex < 0 || audioOldIndex >= audioCount) return;
+
+    var audioNewIndex = newIndex - 1;
+    audioNewIndex = audioNewIndex.clamp(0, audioCount - 1);
+    if (audioOldIndex == audioNewIndex) return;
+
+    await _reorderAudioAttachments(audioOldIndex, audioNewIndex);
+  }
+
   Future<void> _openFileAttachment(NoteFileAttachment attachment) async {
     final result = await OpenFilex.open(attachment.path);
     if (result.type != ResultType.done) {
@@ -486,6 +503,9 @@ class _NoteAttachmentsDialogState
         note?.fileAttachments ?? const <NoteFileAttachment>[];
     final hasAttachments =
         audioAttachments.isNotEmpty || fileAttachments.isNotEmpty;
+    final itemCount =
+        (audioAttachments.isEmpty ? 0 : 1 + audioAttachments.length) +
+        (fileAttachments.isEmpty ? 0 : 1 + fileAttachments.length);
 
     final screenSize = MediaQuery.sizeOf(context);
     return AlertDialog(
@@ -534,65 +554,83 @@ class _NoteAttachmentsDialogState
                 )
               else
                 Expanded(
-                  child: ListView(
-                    shrinkWrap: true,
-                    children: [
-                      if (audioAttachments.isNotEmpty) ...[
-                        const _AttachmentSectionTitle('Audios'),
-                        ReorderableListView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          onReorderItem: _reorderAudioAttachments,
-                          buildDefaultDragHandles: false,
-                          itemCount: audioAttachments.length,
-                          itemBuilder: (context, index) {
-                            final attachment = audioAttachments[index];
-                            final isActive = _activeAudioId == attachment.id;
-                            final isPlaying =
-                                isActive && _playerState == PlayerState.playing;
-                            final duration = _effectiveDuration(attachment);
-                            final position = isActive
-                                ? _currentPosition
-                                : _positions[attachment.id] ?? Duration.zero;
-
-                            return _AudioAttachmentTile(
-                              key: ValueKey(attachment.id),
-                              index: index,
-                              attachment: attachment,
-                              isActive: isActive,
-                              isPlaying: isPlaying,
-                              position: position,
-                              duration: duration,
-                              speed: _speed,
-                              onPlayPause: () => _togglePlayback(attachment),
-                              onSeek: isActive ? _seekActive : null,
-                              onSpeedChanged: _setSpeed,
-                              onOpenExternal: () => _openExternally(attachment),
-                              onShare: () => _shareAudioAttachment(attachment),
-                              onRename: () =>
-                                  _renameAudioAttachment(attachment),
-                              onDelete: () =>
-                                  _deleteAudioAttachment(attachment),
-                              onToggleReviewed: () =>
-                                  _toggleAudioReviewed(attachment),
-                            );
-                          },
+                  child: ReorderableListView.builder(
+                    scrollController: _attachmentsScrollController,
+                    buildDefaultDragHandles: false,
+                    autoScrollerVelocityScalar: 36,
+                    itemCount: itemCount,
+                    onReorderItem: (oldIndex, newIndex) =>
+                        _handleAttachmentReorder(
+                          oldIndex,
+                          newIndex,
+                          audioAttachments.length,
                         ),
-                      ],
-                      if (fileAttachments.isNotEmpty) ...[
-                        const _AttachmentSectionTitle('Archivos'),
-                        for (final attachment in fileAttachments)
-                          _FileAttachmentTile(
+                    itemBuilder: (context, index) {
+                      if (audioAttachments.isNotEmpty) {
+                        if (index == 0) {
+                          return const _AttachmentSectionTitle(
+                            'Audios',
+                            key: ValueKey('audio-section-title'),
+                          );
+                        }
+                        if (index <= audioAttachments.length) {
+                          final audioIndex = index - 1;
+                          final attachment = audioAttachments[audioIndex];
+                          final isActive = _activeAudioId == attachment.id;
+                          final isPlaying =
+                              isActive && _playerState == PlayerState.playing;
+                          final duration = _effectiveDuration(attachment);
+                          final position = isActive
+                              ? _currentPosition
+                              : _positions[attachment.id] ?? Duration.zero;
+
+                          return _AudioAttachmentTile(
+                            key: ValueKey(attachment.id),
+                            index: index,
                             attachment: attachment,
-                            onOpen: () => _openFileAttachment(attachment),
-                            onShare: () => _shareFileAttachment(attachment),
-                            onRename: () => _renameFileAttachment(attachment),
-                            onDelete: () => _deleteFileAttachment(attachment),
+                            isActive: isActive,
+                            isPlaying: isPlaying,
+                            position: position,
+                            duration: duration,
+                            speed: _speed,
+                            onPlayPause: () => _togglePlayback(attachment),
+                            onSeek: isActive ? _seekActive : null,
+                            onSpeedChanged: _setSpeed,
+                            onOpenExternal: () => _openExternally(attachment),
+                            onShare: () => _shareAudioAttachment(attachment),
+                            onRename: () => _renameAudioAttachment(attachment),
+                            onDelete: () => _deleteAudioAttachment(attachment),
                             onToggleReviewed: () =>
-                                _toggleFileReviewed(attachment),
-                          ),
-                      ],
-                    ],
+                                _toggleAudioReviewed(attachment),
+                          );
+                        }
+                      }
+
+                      final fileBaseIndex = audioAttachments.isEmpty
+                          ? 0
+                          : audioAttachments.length + 1;
+                      final fileIndex = index - fileBaseIndex;
+                      if (fileIndex == 0) {
+                        return const _AttachmentSectionTitle(
+                          'Archivos',
+                          key: ValueKey('file-section-title'),
+                        );
+                      }
+
+                      final attachment = fileAttachments[fileIndex - 1];
+                      return KeyedSubtree(
+                        key: ValueKey('file-${attachment.id}'),
+                        child: _FileAttachmentTile(
+                          attachment: attachment,
+                          onOpen: () => _openFileAttachment(attachment),
+                          onShare: () => _shareFileAttachment(attachment),
+                          onRename: () => _renameFileAttachment(attachment),
+                          onDelete: () => _deleteFileAttachment(attachment),
+                          onToggleReviewed: () =>
+                              _toggleFileReviewed(attachment),
+                        ),
+                      );
+                    },
                   ),
                 ),
             ],
