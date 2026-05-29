@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'config/router.dart';
 import 'config/theme.dart';
+import 'config/branding.dart';
 import 'data/models/theme_palette.dart';
 import 'data/providers.dart';
 import 'data/services/supabase_service.dart';
@@ -26,7 +27,7 @@ class _AppBootstrapState extends ConsumerState<AppBootstrap> {
   @override
   void initState() {
     super.initState();
-    Future<void>.delayed(const Duration(milliseconds: 850), () {
+    Future<void>.delayed(AppBranding.splashHoldDuration, () {
       if (mounted) setState(() => _showSplash = false);
     });
   }

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../config/branding.dart';
+import 'brand_mark.dart';
 import 'floral_background.dart';
 
 class LilySplash extends StatelessWidget {
@@ -11,11 +13,13 @@ class LilySplash extends StatelessWidget {
     return Scaffold(
       body: FloralBackground(
         child: Container(
-          color: Theme.of(context).scaffoldBackgroundColor,
+          color: colors.brightness == Brightness.dark
+              ? Theme.of(context).scaffoldBackgroundColor
+              : AppBranding.splashBackground,
           child: Center(
             child: TweenAnimationBuilder<double>(
               tween: Tween(begin: 0, end: 1),
-              duration: const Duration(milliseconds: 420),
+              duration: AppBranding.splashFadeDuration,
               builder: (context, value, child) => Opacity(
                 opacity: value,
                 child: Transform.scale(
@@ -26,14 +30,10 @@ class LilySplash extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  FloralCornerDecoration(
-                    size: 96,
-                    opacity: colors.brightness == Brightness.dark ? 0.16 : 0.22,
-                    color: colors.primary,
-                  ),
+                  const BrandMark(size: 104),
                   const SizedBox(height: 18),
                   Text(
-                    'Couple App',
+                    AppBranding.displayName,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.w800,
                       color: colors.onSurface,
@@ -41,7 +41,7 @@ class LilySplash extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'un espacio cálido para cuidarse',
+                    AppBranding.tagline,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: colors.onSurface.withValues(alpha: 0.68),
                     ),
