@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../data/providers.dart';
 import '../../../data/models/message.dart';
+import '../../../shared/widgets/floral_background.dart';
 import '../widgets/edit_custom_message_dialog.dart';
 
 part '../widgets/home_status_widgets.dart';
@@ -187,249 +188,257 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
-          child: Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xFFF9F4F4), Colors.white],
+          child: FloralBackground(
+            child: Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Theme.of(context).scaffoldBackgroundColor,
+                    Theme.of(context).colorScheme.surface,
+                  ],
+                ),
               ),
-            ),
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final horizontalPadding = constraints.maxWidth >= 600
-                    ? 24.0
-                    : 16.0;
-                final availableWidth =
-                    constraints.maxWidth - (horizontalPadding * 2);
-                final contentWidth = availableWidth > 720
-                    ? 720.0
-                    : availableWidth;
-                final gridColumns = contentWidth >= 420 ? 2 : 1;
-                final gridRatio = gridColumns == 1 ? 1.75 : 1.12;
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final horizontalPadding = constraints.maxWidth >= 600
+                      ? 24.0
+                      : 16.0;
+                  final availableWidth =
+                      constraints.maxWidth - (horizontalPadding * 2);
+                  final contentWidth = availableWidth > 720
+                      ? 720.0
+                      : availableWidth;
+                  final gridColumns = contentWidth >= 420 ? 2 : 1;
+                  final gridRatio = gridColumns == 1 ? 1.75 : 1.12;
 
-                return RefreshIndicator(
-                  onRefresh: _refreshHome,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.fromLTRB(
-                      horizontalPadding,
-                      16,
-                      horizontalPadding,
-                      24,
-                    ),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 720),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Editable custom message title
-                            FadeTransition(
-                              opacity: _titleAnimation,
-                              child: GestureDetector(
-                                onTap: isRoomConnected
-                                    ? () => _showEditDialog(customMessage)
-                                    : null,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: const Color(0xFFFD8392).withValues(
-                                        alpha: isRoomConnected ? 0.3 : 0,
+                  return RefreshIndicator(
+                    onRefresh: _refreshHome,
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.fromLTRB(
+                        horizontalPadding,
+                        16,
+                        horizontalPadding,
+                        24,
+                      ),
+                      child: Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 720),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Editable custom message title
+                              FadeTransition(
+                                opacity: _titleAnimation,
+                                child: GestureDetector(
+                                  onTap: isRoomConnected
+                                      ? () => _showEditDialog(customMessage)
+                                      : null,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: const Color(0xFFFD8392)
+                                            .withValues(
+                                              alpha: isRoomConnected ? 0.3 : 0,
+                                            ),
                                       ),
                                     ),
-                                  ),
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          customMessage,
-                                          style: const TextStyle(
-                                            fontSize: 28,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF2D3748),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            customMessage,
+                                            style: const TextStyle(
+                                              fontSize: 28,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF2D3748),
+                                            ),
+                                            textAlign: TextAlign.center,
+                                            maxLines: 2,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                          textAlign: TextAlign.center,
-                                          maxLines: 2,
-                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                      ),
-                                      if (isRoomConnected)
-                                        const SizedBox(width: 8),
-                                      if (isRoomConnected)
-                                        Icon(
-                                          Icons.edit,
-                                          size: 20,
-                                          color: const Color(
-                                            0xFFFD8392,
-                                          ).withValues(alpha: 0.7),
-                                        ),
-                                    ],
+                                        if (isRoomConnected)
+                                          const SizedBox(width: 8),
+                                        if (isRoomConnected)
+                                          Icon(
+                                            Icons.edit,
+                                            size: 20,
+                                            color: const Color(
+                                              0xFFFD8392,
+                                            ).withValues(alpha: 0.7),
+                                          ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 12),
+                              const SizedBox(height: 12),
 
-                            _RelationshipTrackerCard(
-                              relationshipStartDate: relationshipStartDate,
-                              periodStartedAt: periodStartedAt,
-                              onEditStartDate: () => _pickRelationshipStartDate(
-                                relationshipStartDate,
+                              _RelationshipTrackerCard(
+                                relationshipStartDate: relationshipStartDate,
+                                periodStartedAt: periodStartedAt,
+                                onEditStartDate: () =>
+                                    _pickRelationshipStartDate(
+                                      relationshipStartDate,
+                                    ),
+                                onClearStartDate: relationshipStartDate == null
+                                    ? null
+                                    : () => ref
+                                          .read(roomStateProvider.notifier)
+                                          .updateRelationshipStartDate(null),
+                                onStartPeriod: () => ref
+                                    .read(roomStateProvider.notifier)
+                                    .startPeriod(),
+                                onClearPeriod: periodStartedAt == null
+                                    ? null
+                                    : () => ref
+                                          .read(roomStateProvider.notifier)
+                                          .updatePeriodStartedAt(null),
                               ),
-                              onClearStartDate: relationshipStartDate == null
-                                  ? null
-                                  : () => ref
-                                        .read(roomStateProvider.notifier)
-                                        .updateRelationshipStartDate(null),
-                              onStartPeriod: () => ref
-                                  .read(roomStateProvider.notifier)
-                                  .startPeriod(),
-                              onClearPeriod: periodStartedAt == null
-                                  ? null
-                                  : () => ref
-                                        .read(roomStateProvider.notifier)
-                                        .updatePeriodStartedAt(null),
-                            ),
-                            const SizedBox(height: 12),
+                              const SizedBox(height: 12),
 
-                            // Incoming message card
-                            if (isRoomConnected) ...[
-                              FadeTransition(
-                                opacity: _messageAnimation,
-                                child: Builder(
-                                  builder: (context) {
-                                    return messageNotifier.when(
-                                      data: (message) {
-                                        if (message == null) {
-                                          return _EmptyMessageCard();
-                                        }
-                                        return Card(
-                                          elevation: 4,
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              16,
-                                            ),
-                                          ),
-                                          child: Container(
-                                            decoration: BoxDecoration(
+                              // Incoming message card
+                              if (isRoomConnected) ...[
+                                FadeTransition(
+                                  opacity: _messageAnimation,
+                                  child: Builder(
+                                    builder: (context) {
+                                      return messageNotifier.when(
+                                        data: (message) {
+                                          if (message == null) {
+                                            return _EmptyMessageCard();
+                                          }
+                                          return Card(
+                                            elevation: 4,
+                                            shape: RoundedRectangleBorder(
                                               borderRadius:
                                                   BorderRadius.circular(16),
-                                              gradient: LinearGradient(
-                                                colors: [
-                                                  const Color(
-                                                    0xFFFD8392,
-                                                  ).withValues(alpha: 0.05),
-                                                  const Color(
-                                                    0xFFF7C0C9,
-                                                  ).withValues(alpha: 0.1),
+                                            ),
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                borderRadius:
+                                                    BorderRadius.circular(16),
+                                                gradient: LinearGradient(
+                                                  colors: [
+                                                    const Color(
+                                                      0xFFFD8392,
+                                                    ).withValues(alpha: 0.05),
+                                                    const Color(
+                                                      0xFFF7C0C9,
+                                                    ).withValues(alpha: 0.1),
+                                                  ],
+                                                ),
+                                              ),
+                                              padding: const EdgeInsets.all(16),
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    'Un mensaje para ti',
+                                                    style: Theme.of(
+                                                      context,
+                                                    ).textTheme.labelSmall,
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Text(
+                                                    message.content,
+                                                    style: const TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color: Color(0xFF2D3748),
+                                                    ),
+                                                  ),
                                                 ],
                                               ),
                                             ),
-                                            padding: const EdgeInsets.all(16),
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  'Un mensaje para ti',
-                                                  style: Theme.of(
-                                                    context,
-                                                  ).textTheme.labelSmall,
-                                                ),
-                                                const SizedBox(height: 8),
-                                                Text(
-                                                  message.content,
-                                                  style: const TextStyle(
-                                                    fontSize: 16,
-                                                    fontWeight: FontWeight.w500,
-                                                    color: Color(0xFF2D3748),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
+                                          );
+                                        },
+                                        loading: () => const Card(
+                                          child: Padding(
+                                            padding: EdgeInsets.all(16),
+                                            child: CircularProgressIndicator(),
                                           ),
-                                        );
-                                      },
-                                      loading: () => const Card(
-                                        child: Padding(
-                                          padding: EdgeInsets.all(16),
-                                          child: CircularProgressIndicator(),
                                         ),
-                                      ),
-                                      error: (error, stack) =>
-                                          _EmptyMessageCard(),
-                                    );
-                                  },
+                                        error: (error, stack) =>
+                                            _EmptyMessageCard(),
+                                      );
+                                    },
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(height: 24),
-                            ],
-
-                            // Counts grid
-                            GridView.count(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              crossAxisCount: gridColumns,
-                              mainAxisSpacing: 16,
-                              crossAxisSpacing: 16,
-                              childAspectRatio: gridRatio,
-                              children: [
-                                _AnimatedHomeCard(
-                                  delay: 0,
-                                  title: 'Tareas pendientes',
-                                  count: pendingTodos,
-                                  icon: Icons.check_circle_outline,
-                                  color: const Color(0xFFFD8392),
-                                  onTap: () => context.go('/couple'),
-                                ),
-                                _AnimatedHomeCard(
-                                  delay: 100,
-                                  title: 'Compras pendientes',
-                                  count: pendingShopping,
-                                  icon: Icons.shopping_cart_outlined,
-                                  color: const Color(0xFFFD8392),
-                                  onTap: () => context.go('/shopping'),
-                                ),
-                                _AnimatedHomeCard(
-                                  delay: 200,
-                                  title: 'Notas guardadas',
-                                  count: notesCount,
-                                  icon: Icons.note_outlined,
-                                  color: const Color(0xFFFD8392),
-                                  onTap: () => context.go('/notes'),
-                                ),
-                                _AnimatedHomeCard(
-                                  delay: 300,
-                                  title: 'Recordatorios',
-                                  count: calendarCount,
-                                  icon: Icons.calendar_month_outlined,
-                                  color: const Color(0xFFFD8392),
-                                  onTap: () => context.go('/calendar'),
-                                ),
-                                _AnimatedHomeCard(
-                                  delay: 400,
-                                  title: 'Cajas creadas',
-                                  count: boxesCount,
-                                  icon: Icons.inventory_2_outlined,
-                                  color: const Color(0xFFFD8392),
-                                  onTap: () => context.go('/boxes'),
-                                ),
+                                const SizedBox(height: 24),
                               ],
-                            ),
-                          ],
+
+                              // Counts grid
+                              GridView.count(
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                crossAxisCount: gridColumns,
+                                mainAxisSpacing: 16,
+                                crossAxisSpacing: 16,
+                                childAspectRatio: gridRatio,
+                                children: [
+                                  _AnimatedHomeCard(
+                                    delay: 0,
+                                    title: 'Tareas pendientes',
+                                    count: pendingTodos,
+                                    icon: Icons.check_circle_outline,
+                                    color: const Color(0xFFFD8392),
+                                    onTap: () => context.go('/couple'),
+                                  ),
+                                  _AnimatedHomeCard(
+                                    delay: 100,
+                                    title: 'Compras pendientes',
+                                    count: pendingShopping,
+                                    icon: Icons.shopping_cart_outlined,
+                                    color: const Color(0xFFFD8392),
+                                    onTap: () => context.go('/shopping'),
+                                  ),
+                                  _AnimatedHomeCard(
+                                    delay: 200,
+                                    title: 'Notas guardadas',
+                                    count: notesCount,
+                                    icon: Icons.note_outlined,
+                                    color: const Color(0xFFFD8392),
+                                    onTap: () => context.go('/notes'),
+                                  ),
+                                  _AnimatedHomeCard(
+                                    delay: 300,
+                                    title: 'Recordatorios',
+                                    count: calendarCount,
+                                    icon: Icons.calendar_month_outlined,
+                                    color: const Color(0xFFFD8392),
+                                    onTap: () => context.go('/calendar'),
+                                  ),
+                                  _AnimatedHomeCard(
+                                    delay: 400,
+                                    title: 'Cajas creadas',
+                                    count: boxesCount,
+                                    icon: Icons.inventory_2_outlined,
+                                    color: const Color(0xFFFD8392),
+                                    onTap: () => context.go('/boxes'),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         ),

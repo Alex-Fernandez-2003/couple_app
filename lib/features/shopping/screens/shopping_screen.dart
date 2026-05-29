@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/shopping_item.dart';
 import '../../../data/providers.dart';
+import '../../../shared/widgets/floral_background.dart';
 
 part '../widgets/shopping_tabs_widgets.dart';
 part '../widgets/shopping_dialogs_widgets.dart';

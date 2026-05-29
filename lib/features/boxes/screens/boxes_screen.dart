@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/box_model.dart';
 import '../../../data/providers.dart';
+import '../../../shared/widgets/floral_background.dart';
 
 part '../widgets/boxes_tabs_widgets.dart';
 part '../widgets/boxes_dialogs_widgets.dart';
@@ -44,7 +45,10 @@ class _BoxesScreenState extends ConsumerState<BoxesScreen>
           tabs: const [
             Tab(icon: Icon(Icons.inventory_2_outlined), text: 'Cajas'),
             Tab(icon: Icon(Icons.bookmark_border), text: 'Plantillas'),
-            Tab(icon: Icon(Icons.checklist_outlined), text: 'Materiales'),
+            Tab(
+              icon: Icon(Icons.medical_services_outlined),
+              text: 'Materiales',
+            ),
           ],
         ),
       ),

@@ -12,6 +12,7 @@ import '../features/pareja/screens/pareja_screen.dart';
 import '../features/settings/screens/theme_settings_screen.dart';
 import '../features/shopping/screens/shopping_screen.dart';
 import '../features/study/screens/study_screen.dart';
+import '../shared/widgets/floral_background.dart';
 
 final appRouter = GoRouter(
   initialLocation: '/',
@@ -109,79 +110,84 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final roomState = _roomState;
 
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Bienvenidos a tu espacio de pareja',
-                style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 16),
-              const Text(
-                'Crea una conexión con tu persona favorita usando un código. Es simple, rápido y sin login.',
-                style: TextStyle(fontSize: 16, height: 1.5),
-              ),
-              if (roomState?.status == RoomStatus.waiting) ...[
-                const SizedBox(height: 24),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(child: Text(roomState?.message ?? '')),
-                      ],
+      body: FloralBackground(
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 32.0,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Bienvenidos a tu espacio de pareja',
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Crea una conexión con tu persona favorita usando un código. Es simple, rápido y sin login.',
+                  style: TextStyle(fontSize: 16, height: 1.5),
+                ),
+                if (roomState?.status == RoomStatus.waiting) ...[
+                  const SizedBox(height: 24),
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(child: Text(roomState?.message ?? '')),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              ],
-              if (roomState?.status == RoomStatus.error &&
-                  roomState?.message.isNotEmpty == true) ...[
-                const SizedBox(height: 24),
-                Card(
-                  color: Colors.red.shade50,
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Text(
-                      roomState?.message ?? '',
-                      style: const TextStyle(color: Colors.red),
+                ],
+                if (roomState?.status == RoomStatus.error &&
+                    roomState?.message.isNotEmpty == true) ...[
+                  const SizedBox(height: 24),
+                  Card(
+                    color: Colors.red.shade50,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        roomState?.message ?? '',
+                        style: const TextStyle(color: Colors.red),
+                      ),
                     ),
                   ),
+                ],
+                const Spacer(),
+                FilledButton.icon(
+                  onPressed: () => context.go('/home'),
+                  icon: const Icon(Icons.home_outlined),
+                  label: const Text('Usar funciones locales'),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton(
+                  onPressed: () => context.go('/create-room'),
+                  child: const Text('Crear conexión'),
+                ),
+                const SizedBox(height: 16),
+                OutlinedButton(
+                  onPressed: () => context.go('/join-room'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFFFD8392),
+                    side: const BorderSide(color: Color(0xFFFD8392)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                  ),
+                  child: const Text('Unirme con código'),
                 ),
               ],
-              const Spacer(),
-              FilledButton.icon(
-                onPressed: () => context.go('/home'),
-                icon: const Icon(Icons.home_outlined),
-                label: const Text('Usar funciones locales'),
-              ),
-              const SizedBox(height: 12),
-              ElevatedButton(
-                onPressed: () => context.go('/create-room'),
-                child: const Text('Crear conexión'),
-              ),
-              const SizedBox(height: 16),
-              OutlinedButton(
-                onPressed: () => context.go('/join-room'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFFD8392),
-                  side: const BorderSide(color: Color(0xFFFD8392)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: const Text('Unirme con código'),
-              ),
-            ],
+            ),
           ),
         ),
       ),

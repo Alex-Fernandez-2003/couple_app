@@ -5,6 +5,7 @@ import 'config/theme.dart';
 import 'data/models/theme_palette.dart';
 import 'data/providers.dart';
 import 'data/services/supabase_service.dart';
+import 'shared/widgets/lily_splash.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,13 +13,39 @@ Future<void> main() async {
   runApp(const ProviderScope(child: AppBootstrap()));
 }
 
-class AppBootstrap extends ConsumerWidget {
+class AppBootstrap extends ConsumerStatefulWidget {
   const AppBootstrap({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AppBootstrap> createState() => _AppBootstrapState();
+}
+
+class _AppBootstrapState extends ConsumerState<AppBootstrap> {
+  bool _showSplash = true;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(const Duration(milliseconds: 850), () {
+      if (mounted) setState(() => _showSplash = false);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     ref.watch(studyTimerProvider);
-    return const CoupleApp();
+    final palette =
+        ref.watch(themeProvider).value ?? ThemePaletteCatalog.defaultPalette;
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 260),
+      child: _showSplash
+          ? MaterialApp(
+              theme: AppTheme.fromPalette(palette),
+              debugShowCheckedModeBanner: false,
+              home: const LilySplash(),
+            )
+          : const CoupleApp(),
+    );
   }
 }
 

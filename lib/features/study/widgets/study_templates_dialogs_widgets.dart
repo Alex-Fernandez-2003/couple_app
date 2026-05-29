@@ -443,34 +443,12 @@ class _WarmEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 64, color: const Color(0xFFFD8392)),
-            const SizedBox(height: 16),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: Color(0xFF718096), height: 1.4),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: onAction,
-              icon: const Icon(Icons.add),
-              label: Text(actionLabel),
-            ),
-          ],
-        ),
-      ),
+    return FloralEmptyState(
+      icon: icon,
+      title: title,
+      message: message,
+      actionLabel: actionLabel,
+      onAction: onAction,
     );
   }
 }

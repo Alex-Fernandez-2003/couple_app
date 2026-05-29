@@ -7,6 +7,7 @@ import 'package:couple_app/data/models/shared_item.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:go_router/go_router.dart';
+import '../../../shared/widgets/floral_background.dart';
 import '../widgets/send_message_dialog.dart';
 
 part '../widgets/partner_photo_widgets.dart';
@@ -444,60 +445,23 @@ class _ParejaScreenState extends ConsumerState<ParejaScreen> {
                               ),
                               const SizedBox(height: 24),
                             ],
-                            // Empty state message
                             if (!isRoomConnected)
-                              Center(
-                                child: Column(
-                                  children: [
-                                    Icon(
-                                      Icons.heart_broken,
-                                      size: 48,
-                                      color: const Color(
-                                        0xFFFD8392,
-                                      ).withValues(alpha: 0.5),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    const Text(
-                                      'Sin conexión',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    const Text(
-                                      'Conecta una sala cuando quieras enviar mensajes y compartir tareas.',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Wrap(
-                                      alignment: WrapAlignment.center,
-                                      spacing: 8,
-                                      runSpacing: 8,
-                                      children: [
-                                        ElevatedButton.icon(
-                                          onPressed: () =>
-                                              context.go('/create-room'),
-                                          icon: const Icon(Icons.add_link),
-                                          label: const Text('Crear conexión'),
-                                        ),
-                                        OutlinedButton.icon(
-                                          onPressed: () =>
-                                              context.go('/join-room'),
-                                          icon: const Icon(Icons.link),
-                                          label: const Text(
-                                            'Unirme con código',
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                              Column(
+                                children: [
+                                  FloralEmptyState(
+                                    icon: Icons.favorite_border,
+                                    title: 'Sin conexión',
+                                    message:
+                                        'Conecta una sala cuando quieras enviar mensajes y compartir tareas.',
+                                    actionLabel: 'Crear conexión',
+                                    onAction: () => context.go('/create-room'),
+                                  ),
+                                  OutlinedButton.icon(
+                                    onPressed: () => context.go('/join-room'),
+                                    icon: const Icon(Icons.link),
+                                    label: const Text('Unirme con código'),
+                                  ),
+                                ],
                               ),
                           ],
                         ),

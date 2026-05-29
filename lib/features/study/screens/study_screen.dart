@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../data/models/study.dart';
 import '../../../data/providers.dart';
+import '../../../shared/widgets/floral_background.dart';
 
 part '../widgets/study_goals_widgets.dart';
 part '../widgets/study_timer_widgets.dart';
@@ -98,9 +99,9 @@ class _StudyScreenState extends ConsumerState<StudyScreen>
         bottom: TabBar(
           controller: _tabController,
           tabs: const [
-            Tab(text: 'Metas'),
-            Tab(text: 'Timer'),
-            Tab(text: 'Plantillas'),
+            Tab(icon: Icon(Icons.medical_services_outlined), text: 'Metas'),
+            Tab(icon: Icon(Icons.timer_outlined), text: 'Timer'),
+            Tab(icon: Icon(Icons.menu_book_outlined), text: 'Plantillas'),
           ],
         ),
       ),
