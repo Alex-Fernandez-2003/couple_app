@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'config/router.dart';
 import 'config/theme.dart';
+import 'data/models/theme_palette.dart';
 import 'data/providers.dart';
 import 'data/services/supabase_service.dart';
 
@@ -21,14 +22,16 @@ class AppBootstrap extends ConsumerWidget {
   }
 }
 
-class CoupleApp extends StatelessWidget {
+class CoupleApp extends ConsumerWidget {
   const CoupleApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette =
+        ref.watch(themeProvider).value ?? ThemePaletteCatalog.defaultPalette;
     return MaterialApp.router(
       title: 'Couple App',
-      theme: AppTheme.light(),
+      theme: AppTheme.fromPalette(palette),
       routerConfig: appRouter,
       debugShowCheckedModeBanner: false,
     );

@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:couple_app/config/router.dart';
 import 'package:couple_app/config/theme.dart';
+import 'package:couple_app/data/models/theme_palette.dart';
+import 'package:couple_app/main.dart' as app;
 
 import '../helpers/test_utils.dart';
 
@@ -106,6 +108,19 @@ void main() {
       expect(theme.colorScheme.primary, equals(const Color(0xFFFD8392)));
       expect(theme.colorScheme.brightness, equals(Brightness.light));
     });
+
+    testWidgets('CoupleApp applies the persisted theme palette at runtime', (
+      WidgetTester tester,
+    ) async {
+      await resetStorage({'theme_palette_id': 'soft-night'});
+
+      await tester.pumpWidget(const ProviderScope(child: app.CoupleApp()));
+      await tester.pumpAndSettle();
+
+      final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
+      expect(materialApp.theme?.colorScheme.primary, const Color(0xFFFF9EAE));
+      expect(materialApp.theme?.colorScheme.brightness, Brightness.dark);
+    });
   });
 
   group('Theme Tests', () {
@@ -138,6 +153,25 @@ void main() {
         theme.inputDecorationTheme.fillColor,
         equals(const Color(0xFFF7F1F3)),
       );
+    });
+
+    test('builds a light theme from a selected palette', () {
+      final palette = ThemePaletteCatalog.byId('dental-lavender');
+      final theme = AppTheme.fromPalette(palette);
+
+      expect(theme.colorScheme.primary, palette.primaryColor);
+      expect(theme.colorScheme.secondary, palette.secondaryColor);
+      expect(theme.scaffoldBackgroundColor, palette.backgroundColor);
+      expect(theme.colorScheme.brightness, Brightness.light);
+    });
+
+    test('builds a soft dark theme without pure black surfaces', () {
+      final palette = ThemePaletteCatalog.byId('soft-night');
+      final theme = AppTheme.fromPalette(palette);
+
+      expect(theme.colorScheme.brightness, Brightness.dark);
+      expect(theme.scaffoldBackgroundColor, isNot(const Color(0xFF000000)));
+      expect(theme.cardTheme.color, isNot(const Color(0xFF000000)));
     });
   });
 

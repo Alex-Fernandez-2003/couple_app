@@ -1,34 +1,48 @@
 import 'package:flutter/material.dart';
 
+import '../data/models/theme_palette.dart';
+
 class AppTheme {
   static ThemeData light() {
-    const primary = Color(0xFFFD8392);
+    return fromPalette(ThemePaletteCatalog.defaultPalette);
+  }
+
+  static ThemeData fromPalette(ThemePalette palette) {
+    final primary = palette.primaryColor;
+    final isDark = palette.isDark;
+    final onSurface = isDark
+        ? const Color(0xFFF7F2FF)
+        : const Color(0xFF2D3748);
+    final inputFill = isDark
+        ? const Color(0xFF383448)
+        : const Color(0xFFF7F1F3);
     return ThemeData(
       useMaterial3: true,
-      colorScheme: const ColorScheme(
-        brightness: Brightness.light,
+      brightness: palette.brightness,
+      colorScheme: ColorScheme(
+        brightness: palette.brightness,
         primary: primary,
         onPrimary: Colors.white,
-        secondary: Color(0xFFF7C0C9),
-        onSecondary: Colors.black,
-        error: Color(0xFFB00020),
+        secondary: palette.secondaryColor,
+        onSecondary: isDark ? const Color(0xFF211F2A) : Colors.black,
+        error: isDark ? const Color(0xFFFFB4AB) : const Color(0xFFB00020),
         onError: Colors.white,
-        surface: Colors.white,
-        onSurface: Colors.black87,
+        surface: palette.surfaceColor,
+        onSurface: onSurface,
       ),
-      scaffoldBackgroundColor: const Color(0xFFF9F4F4),
-      appBarTheme: const AppBarTheme(
+      scaffoldBackgroundColor: palette.backgroundColor,
+      appBarTheme: AppBarTheme(
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.black87,
+        foregroundColor: onSurface,
         surfaceTintColor: Colors.transparent,
       ),
       cardTheme: CardThemeData(
-        color: Colors.white,
+        color: palette.surfaceColor,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         elevation: 4,
-        shadowColor: const Color(0xFFFD8392).withValues(alpha: 0.1),
+        shadowColor: primary.withValues(alpha: isDark ? 0.18 : 0.1),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: primary,
@@ -54,32 +68,29 @@ class AppTheme {
           borderSide: BorderSide.none,
         ),
         filled: true,
-        fillColor: const Color(0xFFF7F1F3),
+        fillColor: inputFill,
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: Color(0xFFFD8392), width: 2),
+          borderSide: BorderSide(color: primary, width: 2),
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 16,
         ),
       ),
-      progressIndicatorTheme: const ProgressIndicatorThemeData(
-        color: Color(0xFFFD8392),
-        linearTrackColor: Color(0xFFF7F1F3),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: primary,
+        linearTrackColor: inputFill,
       ),
       textTheme: Typography.material2021(platform: TargetPlatform.android).black
-          .apply(
-            bodyColor: const Color(0xFF2D3748),
-            displayColor: const Color(0xFF2D3748),
-          )
+          .apply(bodyColor: onSurface, displayColor: onSurface)
           .copyWith(
-            headlineSmall: const TextStyle(
-              color: Color(0xFF2D3748),
+            headlineSmall: TextStyle(
+              color: onSurface,
               fontWeight: FontWeight.w600,
             ),
-            titleMedium: const TextStyle(
-              color: Color(0xFF2D3748),
+            titleMedium: TextStyle(
+              color: onSurface,
               fontWeight: FontWeight.w500,
             ),
           ),
