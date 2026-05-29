@@ -223,60 +223,65 @@ class _NoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: IconButton(
-          icon: Icon(note.isFavorite ? Icons.star : Icons.star_border),
-          color: note.isFavorite ? const Color(0xFFFD8392) : Colors.grey,
-          tooltip: note.isFavorite ? 'Quitar favorito' : 'Marcar favorito',
-          onPressed: onToggleFavorite,
-        ),
-        title: Text(
-          note.title,
-          style: const TextStyle(fontWeight: FontWeight.w500),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(note.content, maxLines: 2, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                _SmallLabel(icon: Icons.folder_outlined, text: categoryName),
-                _SmallLabel(
-                  icon: Icons.schedule,
-                  text: 'Creada: ${_formatDate(note.createdAt)}',
-                ),
-                if (note.audioAttachments.isNotEmpty)
-                  _SmallLabel(
-                    icon: Icons.mic_none,
-                    text: '${note.audioAttachments.length} audios',
-                  ),
-                if (note.fileAttachments.isNotEmpty)
-                  _SmallLabel(
-                    icon: Icons.attach_file,
-                    text: '${note.fileAttachments.length} archivos',
-                  ),
-              ],
+    return SoftFadeSlide(
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          leading: IconButton(
+            icon: AnimatedCheckIcon(
+              checked: note.isFavorite,
+              checkedIcon: Icons.star,
+              uncheckedIcon: Icons.star_border,
             ),
-          ],
+            tooltip: note.isFavorite ? 'Quitar favorito' : 'Marcar favorito',
+            onPressed: onToggleFavorite,
+          ),
+          title: Text(
+            note.title,
+            style: const TextStyle(fontWeight: FontWeight.w500),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(note.content, maxLines: 2, overflow: TextOverflow.ellipsis),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 4,
+                children: [
+                  _SmallLabel(icon: Icons.folder_outlined, text: categoryName),
+                  _SmallLabel(
+                    icon: Icons.schedule,
+                    text: 'Creada: ${_formatDate(note.createdAt)}',
+                  ),
+                  if (note.audioAttachments.isNotEmpty)
+                    _SmallLabel(
+                      icon: Icons.mic_none,
+                      text: '${note.audioAttachments.length} audios',
+                    ),
+                  if (note.fileAttachments.isNotEmpty)
+                    _SmallLabel(
+                      icon: Icons.attach_file,
+                      text: '${note.fileAttachments.length} archivos',
+                    ),
+                ],
+              ),
+            ],
+          ),
+          trailing: PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'edit') onEdit();
+              if (value == 'attachments') onAttachments();
+              if (value == 'delete') onDelete();
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'edit', child: Text('Editar')),
+              PopupMenuItem(value: 'attachments', child: Text('Adjuntos')),
+              PopupMenuItem(value: 'delete', child: Text('Eliminar')),
+            ],
+          ),
+          onTap: onAttachments,
         ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            if (value == 'edit') onEdit();
-            if (value == 'attachments') onAttachments();
-            if (value == 'delete') onDelete();
-          },
-          itemBuilder: (context) => const [
-            PopupMenuItem(value: 'edit', child: Text('Editar')),
-            PopupMenuItem(value: 'attachments', child: Text('Adjuntos')),
-            PopupMenuItem(value: 'delete', child: Text('Eliminar')),
-          ],
-        ),
-        onTap: onAttachments,
       ),
     );
   }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/box_model.dart';
 import '../../../data/providers.dart';
 import '../../../shared/widgets/floral_background.dart';
+import '../../../shared/widgets/soft_animations.dart';
 
 part '../widgets/boxes_tabs_widgets.dart';
 part '../widgets/boxes_dialogs_widgets.dart';

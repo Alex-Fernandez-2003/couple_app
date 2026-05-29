@@ -78,66 +78,71 @@ class _GoalsTab extends StatelessWidget {
         final goalIndex = progressIndex - state.progressGoals.length - 1;
         final goal = state.goals[goalIndex];
         final template = _templateFor(state, goal.templateId);
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '${_weekdayName(goal.weekday)} · ${goal.durationMinutes} min',
-                        style: const TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.bold,
+        return SoftFadeSlide(
+          delay: Duration(milliseconds: (goalIndex * 35).clamp(0, 180)),
+          child: Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${_weekdayName(goal.weekday)} · ${goal.durationMinutes} min',
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ),
-                    ),
-                    IconButton(
-                      onPressed: () => onEdit(goal),
-                      icon: const Icon(Icons.edit_outlined),
-                      tooltip: 'Editar',
-                    ),
-                    IconButton(
-                      onPressed: () => onDelete(goal),
-                      icon: const Icon(Icons.delete_outline),
-                      tooltip: 'Eliminar',
+                      IconButton(
+                        onPressed: () => onEdit(goal),
+                        icon: const Icon(Icons.edit_outlined),
+                        tooltip: 'Editar',
+                      ),
+                      IconButton(
+                        onPressed: () => onDelete(goal),
+                        icon: const Icon(Icons.delete_outline),
+                        tooltip: 'Eliminar',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    goal.topics.isEmpty
+                        ? 'Tema libre'
+                        : goal.topics.join(' · '),
+                    style: const TextStyle(color: Color(0xFF2D3748)),
+                  ),
+                  if (template != null) ...[
+                    const SizedBox(height: 8),
+                    _TinyPill(icon: Icons.auto_awesome, text: template.title),
+                  ],
+                  if (goal.incentive != null && goal.incentive!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    _TinyPill(icon: Icons.card_giftcard, text: goal.incentive!),
+                  ],
+                  if (goal.reminderAt != null) ...[
+                    const SizedBox(height: 8),
+                    _TinyPill(
+                      icon: Icons.notifications_none,
+                      text: _formatDateTime(goal.reminderAt!),
                     ),
                   ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  goal.topics.isEmpty ? 'Tema libre' : goal.topics.join(' · '),
-                  style: const TextStyle(color: Color(0xFF2D3748)),
-                ),
-                if (template != null) ...[
-                  const SizedBox(height: 8),
-                  _TinyPill(icon: Icons.auto_awesome, text: template.title),
-                ],
-                if (goal.incentive != null && goal.incentive!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  _TinyPill(icon: Icons.card_giftcard, text: goal.incentive!),
-                ],
-                if (goal.reminderAt != null) ...[
-                  const SizedBox(height: 8),
-                  _TinyPill(
-                    icon: Icons.notifications_none,
-                    text: _formatDateTime(goal.reminderAt!),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: ElevatedButton.icon(
+                      onPressed: () => onStart(goal),
+                      icon: const Icon(Icons.play_arrow),
+                      label: const Text('Estudiar'),
+                    ),
                   ),
                 ],
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: ElevatedButton.icon(
-                    onPressed: () => onStart(goal),
-                    icon: const Icon(Icons.play_arrow),
-                    label: const Text('Estudiar'),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         );

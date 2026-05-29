@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../data/models/study.dart';
 import '../../../data/providers.dart';
 import '../../../shared/widgets/floral_background.dart';
+import '../../../shared/widgets/soft_animations.dart';
 
 part '../widgets/study_goals_widgets.dart';
 part '../widgets/study_timer_widgets.dart';
@@ -44,6 +45,18 @@ class _StudyScreenState extends ConsumerState<StudyScreen>
     _tabController.animateTo(1);
   }
 
+  Future<void> _completeStudySession() async {
+    await ref.read(studyTimerProvider.notifier).completeManually();
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      builder: (context) => const CelebrationBurst(
+        title: 'Sesión completada',
+        message: 'Qué lindo avance. Guardamos tu constancia de hoy.',
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen<String?>(studyNotificationWarningProvider, (previous, next) {
@@ -70,17 +83,10 @@ class _StudyScreenState extends ConsumerState<StudyScreen>
             if (!mounted) return;
             showDialog(
               context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Meta completada'),
-                content: Text(
-                  'Lograste "${goal.title}". Qué orgullo, un paso más cerca.',
-                ),
-                actions: [
-                  ElevatedButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('Celebrar'),
-                  ),
-                ],
+              builder: (context) => CelebrationBurst(
+                title: 'Meta completada',
+                message:
+                    'Lograste "${goal.title}". Que orgullo, un paso mas cerca.',
               ),
             );
           });
@@ -117,50 +123,55 @@ class _StudyScreenState extends ConsumerState<StudyScreen>
           return TabBarView(
             controller: _tabController,
             children: [
-              _GoalsTab(
-                state: state,
-                onAdd: () => _showGoalDialog(context, ref, state),
-                onAddProgress: () => _showProgressGoalDialog(context, ref),
-                onEdit: (goal) => _showGoalDialog(context, ref, state, goal),
-                onDelete: (goal) =>
-                    ref.read(studyProvider.notifier).deleteGoal(goal),
-                onDeleteProgress: (goal) =>
-                    ref.read(studyProvider.notifier).deleteProgressGoal(goal),
-                onStart: (goal) => _startGoal(state, goal),
+              SoftFadeSlide(
+                child: _GoalsTab(
+                  state: state,
+                  onAdd: () => _showGoalDialog(context, ref, state),
+                  onAddProgress: () => _showProgressGoalDialog(context, ref),
+                  onEdit: (goal) => _showGoalDialog(context, ref, state, goal),
+                  onDelete: (goal) =>
+                      ref.read(studyProvider.notifier).deleteGoal(goal),
+                  onDeleteProgress: (goal) =>
+                      ref.read(studyProvider.notifier).deleteProgressGoal(goal),
+                  onStart: (goal) => _startGoal(state, goal),
+                ),
               ),
-              _TimerTab(
-                state: state,
-                activeGoal: activeGoal,
-                activeTemplate: activeTemplate,
-                remainingSeconds: timerState.remainingSeconds,
-                plannedSeconds: timerState.durationSeconds,
-                paused: timerState.status == StudyTimerStatus.paused,
-                onPauseToggle: timerState.hasActiveSession
-                    ? () => ref.read(studyTimerProvider.notifier).togglePause()
-                    : null,
-                onCancel: timerState.hasActiveSession
-                    ? () => ref.read(studyTimerProvider.notifier).cancel()
-                    : null,
-                onComplete: timerState.hasActiveSession
-                    ? () => ref
-                          .read(studyTimerProvider.notifier)
-                          .completeManually()
-                    : null,
-                onQuickStart: (minutes, template) => ref
-                    .read(studyTimerProvider.notifier)
-                    .startTimer(minutes: minutes, template: template),
-                onManualStart: (seconds) => ref
-                    .read(studyTimerProvider.notifier)
-                    .startTimer(totalSeconds: seconds),
-                alarmTone: alarmTone,
-                onToneChanged: (tone) =>
-                    ref.read(studyAlarmToneProvider.notifier).setTone(tone),
+              SoftFadeSlide(
+                child: _TimerTab(
+                  state: state,
+                  activeGoal: activeGoal,
+                  activeTemplate: activeTemplate,
+                  remainingSeconds: timerState.remainingSeconds,
+                  plannedSeconds: timerState.durationSeconds,
+                  paused: timerState.status == StudyTimerStatus.paused,
+                  onPauseToggle: timerState.hasActiveSession
+                      ? () =>
+                            ref.read(studyTimerProvider.notifier).togglePause()
+                      : null,
+                  onCancel: timerState.hasActiveSession
+                      ? () => ref.read(studyTimerProvider.notifier).cancel()
+                      : null,
+                  onComplete: timerState.hasActiveSession
+                      ? _completeStudySession
+                      : null,
+                  onQuickStart: (minutes, template) => ref
+                      .read(studyTimerProvider.notifier)
+                      .startTimer(minutes: minutes, template: template),
+                  onManualStart: (seconds) => ref
+                      .read(studyTimerProvider.notifier)
+                      .startTimer(totalSeconds: seconds),
+                  alarmTone: alarmTone,
+                  onToneChanged: (tone) =>
+                      ref.read(studyAlarmToneProvider.notifier).setTone(tone),
+                ),
               ),
-              _TemplatesTab(
-                templates: state.templates,
-                onAdd: () => _showTemplateDialog(context, ref),
-                onDelete: (template) =>
-                    ref.read(studyProvider.notifier).deleteTemplate(template),
+              SoftFadeSlide(
+                child: _TemplatesTab(
+                  templates: state.templates,
+                  onAdd: () => _showTemplateDialog(context, ref),
+                  onDelete: (template) =>
+                      ref.read(studyProvider.notifier).deleteTemplate(template),
+                ),
               ),
             ],
           );

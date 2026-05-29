@@ -16,6 +16,7 @@ import 'package:uuid/uuid.dart';
 import '../../../data/models/note.dart';
 import '../../../data/providers.dart';
 import '../../../shared/widgets/floral_background.dart';
+import '../../../shared/widgets/soft_animations.dart';
 
 part '../widgets/notes_list_widgets.dart';
 part '../widgets/note_attachments_dialog.dart';

@@ -218,86 +218,91 @@ class _BoxCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final completedCount = items.where((item) => item.completed).length;
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ExpansionTile(
-        title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(description),
-            const SizedBox(height: 4),
-            Text(
-              onToggleItem == null
-                  ? '${items.length} materiales • Creada: ${_formatDate(createdAt)}'
-                  : '$completedCount/${items.length} listos • Creada: ${_formatDate(createdAt)}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-          ],
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            if (value == 'use') onUse?.call();
-            if (value == 'insertMaterials') onInsertMaterials?.call();
-            if (value == 'edit') onEdit();
-            if (value == 'delete') onDelete();
-          },
-          itemBuilder: (context) => [
-            if (onUse != null)
-              const PopupMenuItem(value: 'use', child: Text('Crear caja')),
-            if (onInsertMaterials != null)
-              const PopupMenuItem(
-                value: 'insertMaterials',
-                child: Text('Insertar materiales'),
-              ),
-            const PopupMenuItem(value: 'edit', child: Text('Editar')),
-            const PopupMenuItem(value: 'delete', child: Text('Eliminar')),
-          ],
-        ),
-        children: [
-          if (items.isEmpty)
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                emptyMessage,
-                style: const TextStyle(color: Colors.grey),
-                textAlign: TextAlign.center,
-              ),
-            )
-          else
-            for (final entry in items.asMap().entries)
-              _MaterialTile(
-                item: entry.value,
-                showCheckbox: onToggleItem != null,
-                onToggle: onToggleItem == null
-                    ? null
-                    : () => onToggleItem!(entry.value),
-                onEdit: () => onEditItem(entry.value),
-                onDelete: () => onDeleteItem(entry.key),
-              ),
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                if (showAddItem)
-                  TextButton.icon(
-                    onPressed: onAddItem,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Agregar material'),
-                  ),
-                if (onInsertMaterials != null)
-                  TextButton.icon(
-                    onPressed: onInsertMaterials,
-                    icon: const Icon(Icons.playlist_add_check),
-                    label: const Text('Insertar plantilla'),
-                  ),
-              ],
-            ),
+    return SoftFadeSlide(
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ExpansionTile(
+          title: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w500),
           ),
-        ],
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(description),
+              const SizedBox(height: 4),
+              Text(
+                onToggleItem == null
+                    ? '${items.length} materiales • Creada: ${_formatDate(createdAt)}'
+                    : '$completedCount/${items.length} listos • Creada: ${_formatDate(createdAt)}',
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+          trailing: PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'use') onUse?.call();
+              if (value == 'insertMaterials') onInsertMaterials?.call();
+              if (value == 'edit') onEdit();
+              if (value == 'delete') onDelete();
+            },
+            itemBuilder: (context) => [
+              if (onUse != null)
+                const PopupMenuItem(value: 'use', child: Text('Crear caja')),
+              if (onInsertMaterials != null)
+                const PopupMenuItem(
+                  value: 'insertMaterials',
+                  child: Text('Insertar materiales'),
+                ),
+              const PopupMenuItem(value: 'edit', child: Text('Editar')),
+              const PopupMenuItem(value: 'delete', child: Text('Eliminar')),
+            ],
+          ),
+          children: [
+            if (items.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  emptyMessage,
+                  style: const TextStyle(color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+              )
+            else
+              for (final entry in items.asMap().entries)
+                _MaterialTile(
+                  item: entry.value,
+                  showCheckbox: onToggleItem != null,
+                  onToggle: onToggleItem == null
+                      ? null
+                      : () => onToggleItem!(entry.value),
+                  onEdit: () => onEditItem(entry.value),
+                  onDelete: () => onDeleteItem(entry.key),
+                ),
+            Padding(
+              padding: const EdgeInsets.all(8),
+              child: Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (showAddItem)
+                    TextButton.icon(
+                      onPressed: onAddItem,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Agregar material'),
+                    ),
+                  if (onInsertMaterials != null)
+                    TextButton.icon(
+                      onPressed: onInsertMaterials,
+                      icon: const Icon(Icons.playlist_add_check),
+                      label: const Text('Insertar plantilla'),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -323,10 +328,9 @@ class _MaterialTile extends StatelessWidget {
     return ListTile(
       dense: true,
       leading: showCheckbox
-          ? Checkbox(
+          ? SoftAnimatedCheckbox(
               value: item.completed,
               onChanged: (_) => onToggle?.call(),
-              activeColor: const Color(0xFFFD8392),
             )
           : const Icon(Icons.checklist, size: 20, color: Color(0xFFFD8392)),
       title: Text(

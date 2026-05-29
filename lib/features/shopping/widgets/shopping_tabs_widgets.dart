@@ -154,40 +154,41 @@ class _ShoppingItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: Checkbox(
-          value: item.completed,
-          onChanged: (_) => onToggle(),
-          activeColor: const Color(0xFFFD8392),
-        ),
-        title: Text(
-          item.title,
-          style: TextStyle(
-            decoration: item.completed ? TextDecoration.lineThrough : null,
-            color: item.completed ? Colors.grey : null,
+    return SoftFadeSlide(
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          leading: SoftAnimatedCheckbox(
+            value: item.completed,
+            onChanged: (_) => onToggle(),
           ),
-        ),
-        subtitle: _ShoppingMetadata(
-          notes: item.notes,
-          price: item.price,
-          category: categoryName,
-        ),
-        trailing: Wrap(
-          spacing: 4,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              tooltip: 'Editar compra',
-              onPressed: onEdit,
+          title: Text(
+            item.title,
+            style: TextStyle(
+              decoration: item.completed ? TextDecoration.lineThrough : null,
+              color: item.completed ? Colors.grey : null,
             ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              tooltip: 'Eliminar compra',
-              onPressed: onDelete,
-            ),
-          ],
+          ),
+          subtitle: _ShoppingMetadata(
+            notes: item.notes,
+            price: item.price,
+            category: categoryName,
+          ),
+          trailing: Wrap(
+            spacing: 4,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                tooltip: 'Editar compra',
+                onPressed: onEdit,
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: 'Eliminar compra',
+                onPressed: onDelete,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -211,35 +212,37 @@ class _ShoppingTemplateCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: ListTile(
-        leading: const Icon(Icons.bookmark_border, color: Color(0xFFFD8392)),
-        title: Text(template.title),
-        subtitle: _ShoppingMetadata(
-          notes: template.notes,
-          price: template.price,
-          category: categoryName,
-        ),
-        trailing: Wrap(
-          spacing: 4,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.add_shopping_cart),
-              tooltip: 'Crear compra',
-              onPressed: onUse,
-            ),
-            IconButton(
-              icon: const Icon(Icons.edit_outlined),
-              tooltip: 'Editar plantilla',
-              onPressed: onEdit,
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              tooltip: 'Eliminar plantilla',
-              onPressed: onDelete,
-            ),
-          ],
+    return SoftFadeSlide(
+      child: Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: ListTile(
+          leading: const Icon(Icons.bookmark_border, color: Color(0xFFFD8392)),
+          title: Text(template.title),
+          subtitle: _ShoppingMetadata(
+            notes: template.notes,
+            price: template.price,
+            category: categoryName,
+          ),
+          trailing: Wrap(
+            spacing: 4,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.add_shopping_cart),
+                tooltip: 'Crear compra',
+                onPressed: onUse,
+              ),
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                tooltip: 'Editar plantilla',
+                onPressed: onEdit,
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete_outline),
+                tooltip: 'Eliminar plantilla',
+                onPressed: onDelete,
+              ),
+            ],
+          ),
         ),
       ),
     );

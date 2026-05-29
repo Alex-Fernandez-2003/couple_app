@@ -119,25 +119,28 @@ class _TasksCardState extends State<_TasksCard> {
                               key: ValueKey(_filter),
                               children: [
                                 for (final task in filteredTasks)
-                                  CheckboxListTile(
-                                    value: task.completed,
-                                    onChanged: (_) => widget.onToggle(task),
-                                    title: Text(
-                                      task.title,
-                                      style: TextStyle(
-                                        decoration: task.completed
-                                            ? TextDecoration.lineThrough
-                                            : null,
+                                  SoftFadeSlide(
+                                    child: ListTile(
+                                      contentPadding: EdgeInsets.zero,
+                                      leading: SoftAnimatedCheckbox(
+                                        value: task.completed,
+                                        onChanged: (_) => widget.onToggle(task),
                                       ),
+                                      title: Text(
+                                        task.title,
+                                        style: TextStyle(
+                                          decoration: task.completed
+                                              ? TextDecoration.lineThrough
+                                              : null,
+                                        ),
+                                      ),
+                                      trailing: IconButton(
+                                        onPressed: () => widget.onDelete(task),
+                                        icon: const Icon(Icons.delete_outline),
+                                        tooltip: 'Eliminar tarea',
+                                      ),
+                                      onTap: () => widget.onToggle(task),
                                     ),
-                                    secondary: IconButton(
-                                      onPressed: () => widget.onDelete(task),
-                                      icon: const Icon(Icons.delete_outline),
-                                      tooltip: 'Eliminar tarea',
-                                    ),
-                                    controlAffinity:
-                                        ListTileControlAffinity.leading,
-                                    contentPadding: EdgeInsets.zero,
                                   ),
                               ],
                             ),

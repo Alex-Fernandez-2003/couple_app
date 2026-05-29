@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../../shared/widgets/floral_background.dart';
+import '../../../shared/widgets/soft_animations.dart';
 import '../widgets/send_message_dialog.dart';
 
 part '../widgets/partner_photo_widgets.dart';

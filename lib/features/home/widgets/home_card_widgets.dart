@@ -84,7 +84,7 @@ class _AnimatedHomeCardState extends State<_AnimatedHomeCard>
   }
 }
 
-class _HomeCard extends StatefulWidget {
+class _HomeCard extends StatelessWidget {
   final String title;
   final int count;
   final IconData icon;
@@ -100,119 +100,70 @@ class _HomeCard extends StatefulWidget {
   });
 
   @override
-  State<_HomeCard> createState() => _HomeCardState();
-}
-
-class _HomeCardState extends State<_HomeCard> with TickerProviderStateMixin {
-  late AnimationController _tapController;
-  late Animation<double> _tapAnimation;
-
-  @override
-  void initState() {
-    super.initState();
-    _tapController = AnimationController(
-      duration: const Duration(milliseconds: 150),
-      vsync: this,
-    );
-    _tapAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.95,
-    ).animate(CurvedAnimation(parent: _tapController, curve: Curves.easeInOut));
-  }
-
-  @override
-  void dispose() {
-    _tapController.dispose();
-    super.dispose();
-  }
-
-  void _handleTap() {
-    _tapController.forward().then((_) {
-      _tapController.reverse();
-    });
-    widget.onTap();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _tapAnimation,
-      builder: (context, child) {
-        return Transform.scale(
-          scale: _tapAnimation.value,
-          child: Card(
-            elevation: 8,
-            shadowColor: widget.color.withValues(alpha: 0.3),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [Colors.white, widget.color.withValues(alpha: 0.05)],
+    return Card(
+      elevation: 8,
+      shadowColor: color.withValues(alpha: 0.3),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.white, color.withValues(alpha: 0.05)],
+          ),
+        ),
+        child: SoftPressable(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(icon, size: 30, color: color),
                 ),
-              ),
-              child: InkWell(
-                onTap: _handleTap,
-                borderRadius: BorderRadius.circular(20),
-                splashColor: widget.color.withValues(alpha: 0.1),
-                highlightColor: widget.color.withValues(alpha: 0.05),
-                child: Padding(
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: widget.color.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Icon(widget.icon, size: 30, color: widget.color),
-                      ),
-                      const SizedBox(height: 12),
-                      AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 300),
-                        transitionBuilder: (child, animation) {
-                          return ScaleTransition(
-                            scale: animation,
-                            child: child,
-                          );
-                        },
-                        child: Text(
-                          widget.count.toString(),
-                          key: ValueKey<int>(widget.count),
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: widget.color,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        widget.title,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF2D3748),
-                        ),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
+                const SizedBox(height: 12),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 300),
+                  transitionBuilder: (child, animation) {
+                    return ScaleTransition(scale: animation, child: child);
+                  },
+                  child: Text(
+                    count.toString(),
+                    key: ValueKey<int>(count),
+                    style: TextStyle(
+                      fontSize: 32,
+                      fontWeight: FontWeight.bold,
+                      color: color,
+                    ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 6),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF2D3748),
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

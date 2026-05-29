@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../data/providers.dart';
 import '../../../data/models/message.dart';
 import '../../../shared/widgets/floral_background.dart';
+import '../../../shared/widgets/soft_animations.dart';
 import '../widgets/edit_custom_message_dialog.dart';
 
 part '../widgets/home_status_widgets.dart';
