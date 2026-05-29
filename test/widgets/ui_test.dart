@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:couple_app/config/router.dart';
 import 'package:couple_app/config/theme.dart';
 import 'package:couple_app/data/models/theme_palette.dart';
+import 'package:couple_app/data/services/local_storage_service.dart';
 import 'package:couple_app/main.dart' as app;
 
 import '../helpers/test_utils.dart';
@@ -120,6 +121,39 @@ void main() {
       final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
       expect(materialApp.theme?.colorScheme.primary, const Color(0xFFFF9EAE));
       expect(materialApp.theme?.colorScheme.brightness, Brightness.dark);
+    });
+
+    testWidgets('Theme settings screen changes and restores the palette', (
+      WidgetTester tester,
+    ) async {
+      await resetStorage();
+      appRouter.go('/theme-settings');
+
+      await tester.pumpWidget(const ProviderScope(child: app.CoupleApp()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Personalización'), findsOneWidget);
+
+      await tester.tap(find.text('Lavanda dental'));
+      await tester.pumpAndSettle();
+
+      expect(
+        (await LocalStorageService.getThemePaletteId()),
+        'dental-lavender',
+      );
+      var materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
+      expect(materialApp.theme?.colorScheme.primary, const Color(0xFFB9A7F2));
+
+      await tester.scrollUntilVisible(
+        find.text('Restaurar predeterminado'),
+        300,
+      );
+      await tester.tap(find.text('Restaurar predeterminado'));
+      await tester.pumpAndSettle();
+
+      expect((await LocalStorageService.getThemePaletteId()), 'melon-pink');
+      materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
+      expect(materialApp.theme?.colorScheme.primary, const Color(0xFFFD8392));
     });
   });
 

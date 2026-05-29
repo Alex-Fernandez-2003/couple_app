@@ -9,6 +9,7 @@ import '../features/couple/screens/join_room_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/notes/screens/notes_screen.dart';
 import '../features/pareja/screens/pareja_screen.dart';
+import '../features/settings/screens/theme_settings_screen.dart';
 import '../features/shopping/screens/shopping_screen.dart';
 import '../features/study/screens/study_screen.dart';
 
@@ -51,6 +52,10 @@ final appRouter = GoRouter(
         GoRoute(
           path: '/calendar',
           builder: (context, state) => const CalendarScreen(),
+        ),
+        GoRoute(
+          path: '/theme-settings',
+          builder: (context, state) => const ThemeSettingsScreen(),
         ),
       ],
     ),

@@ -173,6 +173,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         foregroundColor: Colors.black87,
         actions: [
           IconButton(
+            onPressed: () => context.go('/theme-settings'),
+            icon: const Icon(Icons.palette_outlined),
+            tooltip: 'Personalización',
+          ),
+          IconButton(
             onPressed: _refreshHome,
             icon: const Icon(Icons.refresh),
             tooltip: 'Recargar',
