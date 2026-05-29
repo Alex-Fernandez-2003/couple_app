@@ -197,6 +197,18 @@ void main() {
       expect(await LocalStorageService.getStudyTimerState(), isNull);
     });
 
+    test('persists selected theme palette id locally', () async {
+      await resetStorage();
+
+      expect(await LocalStorageService.getThemePaletteId(), isNull);
+
+      await LocalStorageService.saveThemePaletteId('dental-lavender');
+      expect(await LocalStorageService.getThemePaletteId(), 'dental-lavender');
+
+      await LocalStorageService.clearThemePaletteId();
+      expect(await LocalStorageService.getThemePaletteId(), isNull);
+    });
+
     test('uses safe defaults for old study timer payloads', () async {
       await resetStorage({
         'study_timer_state_storage': jsonEncode({

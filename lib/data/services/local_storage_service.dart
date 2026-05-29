@@ -30,6 +30,7 @@ class LocalStorageService {
   static const String _studyAlarmToneKey = 'study_alarm_tone_storage';
   static const String _calendarMarksKey = 'calendar_marks_storage';
   static const String _calendarRemindersKey = 'calendar_reminders_storage';
+  static const String _themePaletteIdKey = 'theme_palette_id';
 
   static Future<SharedPreferences> get _prefs async =>
       await SharedPreferences.getInstance();
@@ -337,6 +338,22 @@ class LocalStorageService {
   static Future<void> clearStudyAlarmTonePath() async {
     final prefs = await _prefs;
     await prefs.remove(_studyAlarmToneKey);
+  }
+
+  // Theme settings methods
+  static Future<String?> getThemePaletteId() async {
+    final prefs = await _prefs;
+    return prefs.getString(_themePaletteIdKey);
+  }
+
+  static Future<void> saveThemePaletteId(String paletteId) async {
+    final prefs = await _prefs;
+    await prefs.setString(_themePaletteIdKey, paletteId);
+  }
+
+  static Future<void> clearThemePaletteId() async {
+    final prefs = await _prefs;
+    await prefs.remove(_themePaletteIdKey);
   }
 
   // Calendar methods
