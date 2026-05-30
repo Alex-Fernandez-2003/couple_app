@@ -1,4 +1,4 @@
-package com.example.couple_app
+package com.alex.sipasitay
 
 import io.flutter.embedding.android.FlutterActivity
 
