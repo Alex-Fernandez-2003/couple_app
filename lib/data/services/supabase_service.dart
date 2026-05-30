@@ -6,19 +6,31 @@ import '../models/shared_item.dart';
 import '../models/message.dart';
 
 class SupabaseService {
+  static bool _isAvailable = false;
+
   static bool get isConfigured =>
       supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
+
+  static bool get isAvailable => isConfigured && _isAvailable;
 
   static Future<void> initialize() async {
     if (!isConfigured) {
       debugPrint(
         'Supabase URL or anon key no configurado. Usa --dart-define=SUPABASE_URL=... y --dart-define=SUPABASE_ANON_KEY=...',
       );
+      _isAvailable = false;
       return;
     }
 
-    await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
-    await ensureAnonymousSession();
+    try {
+      await Supabase.initialize(url: supabaseUrl, anonKey: supabaseAnonKey);
+      await ensureAnonymousSession();
+      _isAvailable = true;
+    } catch (error, stackTrace) {
+      _isAvailable = false;
+      debugPrint('Supabase initialization failed; local mode enabled: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
   }
 
   static Future<void> ensureAnonymousSession() async {

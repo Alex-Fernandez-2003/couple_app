@@ -10,7 +10,12 @@ import 'shared/widgets/lily_splash.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SupabaseService.initialize();
+  try {
+    await SupabaseService.initialize();
+  } catch (error, stackTrace) {
+    debugPrint('Supabase startup failed; continuing in local mode: $error');
+    debugPrintStack(stackTrace: stackTrace);
+  }
   runApp(const ProviderScope(child: AppBootstrap()));
 }
 

@@ -14,7 +14,7 @@ enum RoomStatus { idle, waiting, connected, error }
 
 // ==================== Auth Provider ====================
 final currentUserIdProvider = Provider<String?>((ref) {
-  if (!SupabaseService.isConfigured) return null;
+  if (!SupabaseService.isAvailable) return null;
   try {
     return Supabase.instance.client.auth.currentUser?.id;
   } catch (_) {
@@ -78,6 +78,21 @@ class RoomNotifier extends StateNotifier<RoomState> {
       return;
     }
 
+    if (!SupabaseService.isAvailable) {
+      final relationshipStartDate =
+          await LocalStorageService.getCachedRelationshipStartDate();
+      final periodStartedAt =
+          await LocalStorageService.getCachedPeriodStartedAt();
+      state = RoomState(
+        status: RoomStatus.error,
+        relationshipStartDate: relationshipStartDate,
+        periodStartedAt: periodStartedAt,
+        message:
+            'No hay conexión con Supabase. Podés seguir usando las funciones locales.',
+      );
+      return;
+    }
+
     state = RoomState.loading('Recuperando tu espacio de pareja...');
     try {
       var room = await SupabaseService.getRoom(cachedSession.roomId);
@@ -89,8 +104,6 @@ class RoomNotifier extends StateNotifier<RoomState> {
     } catch (error) {
       debugPrint('Error restoring room session: $error');
       await _activateCachedRoom(
-        cachedSession.roomId,
-        cachedSession.inviteCode,
         'No pude actualizar la sala guardada. Te dejo el espacio local mientras vuelve la conexión.',
       );
     }
@@ -113,6 +126,13 @@ class RoomNotifier extends StateNotifier<RoomState> {
   }
 
   Future<bool> createRoom(String inviteCode) async {
+    if (!SupabaseService.isAvailable) {
+      state = RoomState.error(
+        'No hay conexión con Supabase. Revisá Internet e intentá de nuevo.',
+      );
+      return false;
+    }
+
     state = RoomState.loading('Creando tu espacio de pareja...');
     try {
       var room = await SupabaseService.createRoom(inviteCode);
@@ -129,6 +149,13 @@ class RoomNotifier extends StateNotifier<RoomState> {
   }
 
   Future<bool> joinRoom(String inviteCode) async {
+    if (!SupabaseService.isAvailable) {
+      state = RoomState.error(
+        'No hay conexión con Supabase. Revisá Internet e intentá de nuevo.',
+      );
+      return false;
+    }
+
     state = RoomState.loading('Buscando tu conexión...');
     try {
       var room = await SupabaseService.joinRoom(inviteCode);
@@ -176,11 +203,7 @@ class RoomNotifier extends StateNotifier<RoomState> {
     await ref.read(sharedItemsProvider.notifier).subscribe(room.id);
   }
 
-  Future<void> _activateCachedRoom(
-    String roomId,
-    String inviteCode,
-    String message,
-  ) async {
+  Future<void> _activateCachedRoom(String message) async {
     final cachedCustomMessage =
         await LocalStorageService.getCachedCustomMessage() ??
         'Tu espacio de pareja';
@@ -188,20 +211,8 @@ class RoomNotifier extends StateNotifier<RoomState> {
         await LocalStorageService.getCachedRelationshipStartDate();
     final periodStartedAt =
         await LocalStorageService.getCachedPeriodStartedAt();
-    final now = DateTime.now();
-    final room = Room(
-      id: roomId,
-      inviteCode: inviteCode,
-      name: 'Nuestro espacio',
-      createdAt: now,
-      updatedAt: now,
-      customMessage: cachedCustomMessage,
-      relationshipStartDate: relationshipStartDate,
-      periodStartedAt: periodStartedAt,
-    );
-
-    state = RoomState.connected(
-      room,
+    state = RoomState(
+      status: RoomStatus.error,
       customMessage: cachedCustomMessage,
       relationshipStartDate: relationshipStartDate,
       periodStartedAt: periodStartedAt,
@@ -257,22 +268,33 @@ class RoomNotifier extends StateNotifier<RoomState> {
   }
 
   Future<void> updateCustomMessage(String roomId, String customMessage) async {
+    await LocalStorageService.setCachedCustomMessage(customMessage);
+
+    if (state.status != RoomStatus.connected ||
+        state.room == null ||
+        !SupabaseService.isAvailable) {
+      state = RoomState(
+        status: state.status,
+        room: state.room,
+        customMessage: customMessage,
+        relationshipStartDate: state.relationshipStartDate,
+        periodStartedAt: state.periodStartedAt,
+        message: state.message,
+      );
+      return;
+    }
+
     try {
       await SupabaseService.updateCustomMessage(roomId, customMessage);
       // Update local state
-      if (state.status == RoomStatus.connected && state.room != null) {
-        state = RoomState.connected(
-          state.room!.copyWith(customMessage: customMessage),
-          customMessage: customMessage,
-          relationshipStartDate: state.relationshipStartDate,
-          periodStartedAt: state.periodStartedAt,
-        );
-      }
-      // Cache locally
-      await LocalStorageService.setCachedCustomMessage(customMessage);
+      state = RoomState.connected(
+        state.room!.copyWith(customMessage: customMessage),
+        customMessage: customMessage,
+        relationshipStartDate: state.relationshipStartDate,
+        periodStartedAt: state.periodStartedAt,
+      );
     } catch (e) {
       debugPrint('Error updating custom message: $e');
-      rethrow;
     }
   }
 
