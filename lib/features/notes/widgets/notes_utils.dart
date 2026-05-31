@@ -9,6 +9,18 @@ String _formatDateTime(DateTime date) {
   return '$day/$month/$year $hour:$minute';
 }
 
+String _formatAudioDate(DateTime date) {
+  final day = date.day.toString().padLeft(2, '0');
+  final month = date.month.toString().padLeft(2, '0');
+  return '$day/$month/${date.year}';
+}
+
+String _formatAudioTime(DateTime date) {
+  final hour = date.hour.toString().padLeft(2, '0');
+  final minute = date.minute.toString().padLeft(2, '0');
+  return '$hour:$minute';
+}
+
 List<Note> _filterNotes(
   List<Note> notes,
   List<NoteCategory> categories,

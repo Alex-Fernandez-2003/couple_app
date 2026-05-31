@@ -92,6 +92,48 @@ void main() {
       },
     );
 
+    testWidgets('Audio attachment dialog stays compact on narrow screens', (
+      tester,
+    ) async {
+      await resetStorage();
+      final createdAt = DateTime(2026, 5, 26, 10);
+      await LocalStorageService.saveNotes([
+        Note(
+          id: 'note-with-compact-audio',
+          title: 'Clase con audio',
+          content: 'Materiales',
+          audioAttachments: [
+            NoteAudioAttachment(
+              id: 'audio-1',
+              path: '/tmp/audio.m4a',
+              duration: const Duration(seconds: 30),
+              createdAt: createdAt,
+            ),
+          ],
+          createdAt: createdAt,
+          updatedAt: createdAt,
+        ),
+      ]);
+
+      await tester.pumpWidget(
+        _responsiveHarness(
+          size: const Size(320, 720),
+          child: const NotesScreen(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Clase con audio'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Grabar audio'), findsOneWidget);
+      expect(find.textContaining('26/05/2026'), findsOneWidget);
+      expect(find.textContaining('10:00'), findsOneWidget);
+      expect(find.text('1x'), findsOneWidget);
+      expect(find.byType(ChoiceChip), findsNothing);
+    });
+
     testWidgets('Study screen renders on compact and wide layouts', (
       tester,
     ) async {
