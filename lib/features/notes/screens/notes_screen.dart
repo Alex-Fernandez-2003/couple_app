@@ -148,10 +148,7 @@ void _showNoteDialog(BuildContext context, WidgetRef ref, {Note? note}) {
 }
 
 void _showCategoriesDialog(BuildContext context, WidgetRef ref) {
-  showDialog(
-    context: context,
-    builder: (context) => _CategoriesDialog(ref: ref),
-  );
+  showDialog(context: context, builder: (context) => const _CategoriesDialog());
 }
 
 void _showAttachmentsDialog(BuildContext context, WidgetRef ref, Note note) {

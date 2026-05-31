@@ -140,13 +140,12 @@ class _NoteDialogState extends State<_NoteDialog> {
 }
 
 class _CategoriesDialog extends ConsumerWidget {
-  const _CategoriesDialog({required this.ref});
-
-  final WidgetRef ref;
+  const _CategoriesDialog();
 
   @override
   Widget build(BuildContext context, WidgetRef widgetRef) {
-    final state = ref.watch(notesProvider).value ?? const NotesState.empty();
+    final state =
+        widgetRef.watch(notesProvider).value ?? const NotesState.empty();
 
     return AlertDialog(
       title: const Text('Categorías'),
@@ -177,15 +176,18 @@ class _CategoriesDialog extends ConsumerWidget {
                         IconButton(
                           icon: const Icon(Icons.edit_outlined),
                           tooltip: 'Editar categoría',
-                          onPressed: () =>
-                              _showCategoryNameDialog(context, ref, category),
+                          onPressed: () => _showCategoryNameDialog(
+                            context,
+                            widgetRef,
+                            category,
+                          ),
                         ),
                         IconButton(
                           icon: const Icon(Icons.delete_outline),
                           tooltip: 'Eliminar categoría',
                           onPressed: () => _showDeleteCategoryDialog(
                             context,
-                            ref,
+                            widgetRef,
                             category,
                             count,
                           ),
@@ -198,7 +200,7 @@ class _CategoriesDialog extends ConsumerWidget {
       ),
       actions: [
         TextButton.icon(
-          onPressed: () => _showCategoryNameDialog(context, ref),
+          onPressed: () => _showCategoryNameDialog(context, widgetRef),
           icon: const Icon(Icons.add),
           label: const Text('Crear'),
         ),

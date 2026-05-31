@@ -1,14 +1,12 @@
 part of '../screens/shopping_screen.dart';
 
 class _ShoppingCategoriesDialog extends ConsumerWidget {
-  const _ShoppingCategoriesDialog({required this.ref});
-
-  final WidgetRef ref;
+  const _ShoppingCategoriesDialog();
 
   @override
   Widget build(BuildContext context, WidgetRef widgetRef) {
     final state =
-        ref.watch(shoppingProvider).value ?? const ShoppingState.empty();
+        widgetRef.watch(shoppingProvider).value ?? const ShoppingState.empty();
 
     return AlertDialog(
       title: const Text('Categorías'),
@@ -41,7 +39,7 @@ class _ShoppingCategoriesDialog extends ConsumerWidget {
                           tooltip: 'Editar categoría',
                           onPressed: () => _showShoppingCategoryNameDialog(
                             context,
-                            ref,
+                            widgetRef,
                             category,
                           ),
                         ),
@@ -50,7 +48,7 @@ class _ShoppingCategoriesDialog extends ConsumerWidget {
                           tooltip: 'Eliminar categoría',
                           onPressed: () => _showDeleteShoppingCategoryDialog(
                             context,
-                            ref,
+                            widgetRef,
                             category,
                           ),
                         ),
@@ -62,7 +60,7 @@ class _ShoppingCategoriesDialog extends ConsumerWidget {
       ),
       actions: [
         TextButton.icon(
-          onPressed: () => _showShoppingCategoryNameDialog(context, ref),
+          onPressed: () => _showShoppingCategoryNameDialog(context, widgetRef),
           icon: const Icon(Icons.add),
           label: const Text('Crear'),
         ),

@@ -179,7 +179,7 @@ class _ShoppingScreenState extends ConsumerState<ShoppingScreen>
   void _showCategoriesDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => _ShoppingCategoriesDialog(ref: ref),
+      builder: (context) => const _ShoppingCategoriesDialog(),
     );
   }
 }
