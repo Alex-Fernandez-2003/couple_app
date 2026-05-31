@@ -40,15 +40,20 @@ class _TasksCardState extends State<_TasksCard> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Tareas de pareja',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: colors.onSurface,
+              ),
             ),
             const SizedBox(height: 12),
             widget.tasksState.when(
@@ -63,7 +68,7 @@ class _TasksCardState extends State<_TasksCard> {
                 children: [
                   Text(
                     'Error al cargar las tareas: $error',
-                    style: const TextStyle(color: Colors.red),
+                    style: TextStyle(color: colors.error),
                   ),
                   const SizedBox(height: 8),
                   TextButton.icon(
@@ -112,7 +117,11 @@ class _TasksCardState extends State<_TasksCard> {
                               padding: const EdgeInsets.symmetric(vertical: 8),
                               child: Text(
                                 _emptyMessage(),
-                                style: const TextStyle(color: Colors.grey),
+                                style: TextStyle(
+                                  color: colors.onSurface.withValues(
+                                    alpha: 0.68,
+                                  ),
+                                ),
                               ),
                             )
                           : Column(
@@ -169,18 +178,23 @@ class _TaskFilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return ChoiceChip(
       label: Text(label),
       selected: selected,
       onSelected: (_) => onSelected(),
-      selectedColor: const Color(0xFFFD8392).withValues(alpha: 0.18),
-      checkmarkColor: const Color(0xFFFD8392),
+      selectedColor: colors.primary.withValues(alpha: 0.18),
+      checkmarkColor: colors.primary,
       labelStyle: TextStyle(
-        color: selected ? const Color(0xFFFD8392) : const Color(0xFF4A5568),
+        color: selected
+            ? colors.primary
+            : colors.onSurface.withValues(alpha: 0.72),
         fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
       ),
       side: BorderSide(
-        color: selected ? const Color(0xFFFD8392) : Colors.grey.shade300,
+        color: selected
+            ? colors.primary
+            : colors.outline.withValues(alpha: 0.42),
       ),
     );
   }
@@ -194,13 +208,17 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
           child: Text(
             label,
-            style: const TextStyle(color: Colors.grey, fontSize: 13),
+            style: TextStyle(
+              color: colors.onSurface.withValues(alpha: 0.64),
+              fontSize: 13,
+            ),
           ),
         ),
         const SizedBox(width: 12),

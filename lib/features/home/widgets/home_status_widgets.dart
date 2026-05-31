@@ -3,6 +3,7 @@ part of '../screens/home_screen.dart';
 class _EmptyMessageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -10,10 +11,7 @@ class _EmptyMessageCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           gradient: LinearGradient(
-            colors: [
-              const Color(0xFFFD8392).withValues(alpha: 0.03),
-              Colors.white,
-            ],
+            colors: [colors.primary.withValues(alpha: 0.06), colors.surface],
           ),
         ),
         padding: const EdgeInsets.all(16),
@@ -23,7 +21,7 @@ class _EmptyMessageCard extends StatelessWidget {
             Icon(
               Icons.mail_outline,
               size: 32,
-              color: const Color(0xFFFD8392).withValues(alpha: 0.4),
+              color: colors.primary.withValues(alpha: 0.55),
             ),
             const SizedBox(height: 8),
             Text(
@@ -31,7 +29,7 @@ class _EmptyMessageCard extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey[600],
+                color: colors.onSurface.withValues(alpha: 0.68),
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -61,6 +59,7 @@ class _RelationshipTrackerCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final together = relationshipStartDate == null
         ? null
         : _timeTogether(relationshipStartDate!, DateTime.now());
@@ -80,21 +79,21 @@ class _RelationshipTrackerCard extends StatelessWidget {
               'Nuestro ritmo',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
-                color: const Color(0xFF2D3748),
+                color: colors.onSurface,
               ),
             ),
             const SizedBox(height: 12),
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.favorite, color: Color(0xFFFD8392)),
+                Icon(Icons.favorite, color: colors.primary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     together == null
                         ? 'Agrega la fecha en que empezó su historia.'
                         : '${together.years} años, ${together.months} meses y ${together.days} días juntos',
-                    style: const TextStyle(fontSize: 15),
+                    style: TextStyle(fontSize: 15, color: colors.onSurface),
                   ),
                 ),
               ],
@@ -103,10 +102,13 @@ class _RelationshipTrackerCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.water_drop_outlined, color: Color(0xFFFD8392)),
+                Icon(Icons.water_drop_outlined, color: colors.primary),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: Text(periodText, style: const TextStyle(fontSize: 15)),
+                  child: Text(
+                    periodText,
+                    style: TextStyle(fontSize: 15, color: colors.onSurface),
+                  ),
                 ),
               ],
             ),
@@ -135,8 +137,8 @@ class _RelationshipTrackerCard extends StatelessWidget {
                   icon: const Icon(Icons.play_arrow),
                   label: const Text('Iniciar periodo'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFD8392),
-                    foregroundColor: Colors.white,
+                    backgroundColor: colors.primary,
+                    foregroundColor: colors.onPrimary,
                   ),
                 ),
                 if (onClearPeriod != null)

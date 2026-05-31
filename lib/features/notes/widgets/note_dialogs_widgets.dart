@@ -302,11 +302,14 @@ class _DeleteModeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(
         selected ? Icons.check_circle : Icons.radio_button_unchecked,
-        color: selected ? const Color(0xFFFD8392) : Colors.grey,
+        color: selected
+            ? colors.primary
+            : colors.onSurface.withValues(alpha: 0.62),
       ),
       title: title,
       onTap: onTap,

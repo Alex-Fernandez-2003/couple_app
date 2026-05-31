@@ -62,7 +62,7 @@ class _SendMessageDialogState extends State<SendMessageDialog> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: Theme.of(context).colorScheme.error,
           ),
         );
       }
@@ -83,6 +83,7 @@ class _SendMessageDialogState extends State<SendMessageDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final isValid =
         _controller.text.isNotEmpty && _controller.text.length <= _maxChars;
 
@@ -101,8 +102,8 @@ class _SendMessageDialogState extends State<SendMessageDialog> {
               counterText: '${_controller.text.length}/$_maxChars caracteres',
               counterStyle: TextStyle(
                 color: _controller.text.length > _maxChars
-                    ? Colors.red
-                    : Colors.grey,
+                    ? colors.error
+                    : colors.onSurface.withValues(alpha: 0.62),
               ),
             ),
             maxLength: _maxChars,
@@ -113,7 +114,7 @@ class _SendMessageDialogState extends State<SendMessageDialog> {
               padding: const EdgeInsets.only(top: 8.0),
               child: Text(
                 _validationMessage,
-                style: const TextStyle(color: Colors.red, fontSize: 12),
+                style: TextStyle(color: colors.error, fontSize: 12),
               ),
             ),
         ],

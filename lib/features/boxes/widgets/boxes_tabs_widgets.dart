@@ -235,7 +235,12 @@ class _BoxCard extends StatelessWidget {
                 onToggleItem == null
                     ? '${items.length} materiales • Creada: ${_formatDate(createdAt)}'
                     : '$completedCount/${items.length} listos • Creada: ${_formatDate(createdAt)}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.64),
+                ),
               ),
             ],
           ),
@@ -264,7 +269,11 @@ class _BoxCard extends StatelessWidget {
                 padding: const EdgeInsets.all(16),
                 child: Text(
                   emptyMessage,
-                  style: const TextStyle(color: Colors.grey),
+                  style: TextStyle(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.64),
+                  ),
                   textAlign: TextAlign.center,
                 ),
               )
@@ -337,7 +346,9 @@ class _MaterialTile extends StatelessWidget {
         item.title,
         style: TextStyle(
           decoration: item.completed ? TextDecoration.lineThrough : null,
-          color: item.completed ? Colors.grey : null,
+          color: item.completed
+              ? Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.45)
+              : null,
         ),
       ),
       trailing: Wrap(

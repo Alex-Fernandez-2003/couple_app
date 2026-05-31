@@ -123,14 +123,15 @@ class _NotesSearchField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return TextField(
       controller: controller,
       onChanged: onChanged,
       decoration: InputDecoration(
-        prefixIcon: const Icon(Icons.search),
+        prefixIcon: Icon(Icons.search, color: colors.onSurfaceVariant),
         hintText: 'Buscar notas, categorías o adjuntos',
         filled: true,
-        fillColor: const Color(0xFFFFF7F8),
+        fillColor: colors.surfaceContainerHighest.withValues(alpha: 0.75),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide.none,
@@ -138,7 +139,7 @@ class _NotesSearchField extends StatelessWidget {
         suffixIcon: controller.text.isEmpty
             ? null
             : IconButton(
-                icon: const Icon(Icons.close),
+                icon: Icon(Icons.close, color: colors.onSurfaceVariant),
                 tooltip: 'Limpiar búsqueda',
                 onPressed: () {
                   controller.clear();
@@ -171,6 +172,7 @@ class _NotesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.only(bottom: 20),
       child: Column(
@@ -180,10 +182,10 @@ class _NotesSection extends StatelessWidget {
             padding: const EdgeInsets.only(left: 4, bottom: 8),
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Color(0xFF2D3748),
+                color: colors.onSurface,
               ),
             ),
           ),
@@ -223,6 +225,7 @@ class _NoteCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return SoftFadeSlide(
       child: Card(
         margin: const EdgeInsets.only(bottom: 8),
@@ -238,12 +241,22 @@ class _NoteCard extends StatelessWidget {
           ),
           title: Text(
             note.title,
-            style: const TextStyle(fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontWeight: FontWeight.w500,
+              color: colors.onSurface,
+            ),
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(note.content, maxLines: 2, overflow: TextOverflow.ellipsis),
+              Text(
+                note.content,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: colors.onSurface.withValues(alpha: 0.72),
+                ),
+              ),
               const SizedBox(height: 6),
               Wrap(
                 spacing: 8,

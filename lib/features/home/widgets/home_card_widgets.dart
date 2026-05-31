@@ -101,6 +101,7 @@ class _HomeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Card(
       elevation: 8,
       shadowColor: color.withValues(alpha: 0.3),
@@ -111,7 +112,7 @@ class _HomeCard extends StatelessWidget {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Colors.white, color.withValues(alpha: 0.05)],
+            colors: [colors.surface, color.withValues(alpha: 0.08)],
           ),
         ),
         child: SoftPressable(
@@ -150,10 +151,10 @@ class _HomeCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF2D3748),
+                    color: colors.onSurface,
                   ),
                   textAlign: TextAlign.center,
                   maxLines: 2,

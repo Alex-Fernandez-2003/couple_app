@@ -128,17 +128,20 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.black87,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
       ),
       body: SafeArea(
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: Container(
-            decoration: const BoxDecoration(
+            decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFFF9F4F4), Colors.white],
+                colors: [
+                  Theme.of(context).scaffoldBackgroundColor,
+                  Theme.of(context).colorScheme.surface,
+                ],
               ),
             ),
             child: Padding(
@@ -172,10 +175,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                             Expanded(
                               child: Text(
                                 customMessage,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 28,
                                   fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2D3748),
+                                  color: Theme.of(
+                                    context,
+                                  ).colorScheme.onSurface,
                                 ),
                                 textAlign: TextAlign.center,
                                 maxLines: 2,
@@ -242,10 +247,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                       const SizedBox(height: 8),
                                       Text(
                                         message.content,
-                                        style: const TextStyle(
+                                        style: TextStyle(
                                           fontSize: 16,
                                           fontWeight: FontWeight.w500,
-                                          color: Color(0xFF2D3748),
+                                          color: Theme.of(
+                                            context,
+                                          ).colorScheme.onSurface,
                                         ),
                                       ),
                                     ],
@@ -331,7 +338,7 @@ class _EmptyMessageCard extends StatelessWidget {
           gradient: LinearGradient(
             colors: [
               const Color(0xFFFD8392).withValues(alpha: 0.03),
-              Colors.white,
+              Theme.of(context).colorScheme.surface,
             ],
           ),
         ),
@@ -350,7 +357,9 @@ class _EmptyMessageCard extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey[600],
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.68),
                 fontStyle: FontStyle.italic,
               ),
             ),
@@ -513,7 +522,10 @@ class _HomeCardState extends State<_HomeCard> with TickerProviderStateMixin {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Colors.white, widget.color.withValues(alpha: 0.05)],
+                  colors: [
+                    Theme.of(context).colorScheme.surface,
+                    widget.color.withValues(alpha: 0.08),
+                  ],
                 ),
               ),
               child: InkWell(
@@ -556,10 +568,10 @@ class _HomeCardState extends State<_HomeCard> with TickerProviderStateMixin {
                       const SizedBox(height: 8),
                       Text(
                         widget.title,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Color(0xFF2D3748),
+                          color: Theme.of(context).colorScheme.onSurface,
                         ),
                         textAlign: TextAlign.center,
                         maxLines: 2,

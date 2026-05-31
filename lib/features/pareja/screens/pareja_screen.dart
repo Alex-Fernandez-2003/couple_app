@@ -396,8 +396,10 @@ class _ParejaScreenState extends ConsumerState<ParejaScreen> {
                                   padding: const EdgeInsets.all(16),
                                   child: Text(
                                     roomState.message,
-                                    style: const TextStyle(
-                                      color: Color(0xFF80515A),
+                                    style: TextStyle(
+                                      color: Theme.of(
+                                        context,
+                                      ).colorScheme.onSurface,
                                     ),
                                   ),
                                 ),
@@ -438,12 +440,15 @@ class _ParejaScreenState extends ConsumerState<ParejaScreen> {
                                         ],
                                       )
                                     else
-                                      const Text(
+                                      Text(
                                         'Sin conexión',
                                         style: TextStyle(
                                           fontSize: 16,
                                           fontStyle: FontStyle.italic,
-                                          color: Colors.grey,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.68),
                                         ),
                                       ),
                                     const SizedBox(height: 12),
@@ -505,11 +510,14 @@ class _ParejaScreenState extends ConsumerState<ParejaScreen> {
                                         value: roomState.room!.name,
                                       ),
                                     ] else
-                                      const Text(
+                                      Text(
                                         'Conéctate con tu pareja para ver información.',
                                         style: TextStyle(
                                           fontSize: 14,
-                                          color: Colors.grey,
+                                          color: Theme.of(context)
+                                              .colorScheme
+                                              .onSurface
+                                              .withValues(alpha: 0.68),
                                         ),
                                       ),
                                   ],

@@ -19,6 +19,7 @@ class _ItemsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     if (items.isEmpty) {
       return _EmptyState(
         icon: Icons.shopping_cart_outlined,
@@ -62,10 +63,10 @@ class _ItemsTab extends StatelessWidget {
                 padding: const EdgeInsets.only(left: 4, bottom: 8),
                 child: Text(
                   categoryName,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF2D3748),
+                    color: colors.onSurface,
                   ),
                 ),
               ),
@@ -154,6 +155,7 @@ class _ShoppingItemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return SoftFadeSlide(
       child: Card(
         margin: const EdgeInsets.only(bottom: 8),
@@ -166,7 +168,9 @@ class _ShoppingItemCard extends StatelessWidget {
             item.title,
             style: TextStyle(
               decoration: item.completed ? TextDecoration.lineThrough : null,
-              color: item.completed ? Colors.grey : null,
+              color: item.completed
+                  ? colors.onSurface.withValues(alpha: 0.45)
+                  : colors.onSurface,
             ),
           ),
           subtitle: _ShoppingMetadata(
@@ -216,7 +220,10 @@ class _ShoppingTemplateCard extends StatelessWidget {
       child: Card(
         margin: const EdgeInsets.only(bottom: 8),
         child: ListTile(
-          leading: const Icon(Icons.bookmark_border, color: Color(0xFFFD8392)),
+          leading: Icon(
+            Icons.bookmark_border,
+            color: Theme.of(context).colorScheme.primary,
+          ),
           title: Text(template.title),
           subtitle: _ShoppingMetadata(
             notes: template.notes,
@@ -270,7 +277,18 @@ class _ShoppingMetadata extends StatelessWidget {
       padding: const EdgeInsets.only(top: 4),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: lines.map((line) => Text(line)).toList(),
+        children: lines
+            .map(
+              (line) => Text(
+                line,
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.68),
+                ),
+              ),
+            )
+            .toList(),
       ),
     );
   }

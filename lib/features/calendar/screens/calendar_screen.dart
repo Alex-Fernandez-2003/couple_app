@@ -125,6 +125,7 @@ class _MonthGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final colors = Theme.of(context).colorScheme;
     final firstDay = DateTime(
       state.visibleMonth.year,
       state.visibleMonth.month,
@@ -151,9 +152,9 @@ class _MonthGrid extends ConsumerWidget {
                     child: Center(
                       child: Text(
                         label,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF80515A),
+                          color: colors.onSurface.withValues(alpha: 0.72),
                         ),
                       ),
                     ),
@@ -216,11 +217,12 @@ class _CalendarDayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final color = selected
-        ? const Color(0xFFFD8392)
+        ? colors.primary
         : marked
-        ? const Color(0xFFFFD6DC)
-        : Colors.white;
+        ? colors.primary.withValues(alpha: 0.18)
+        : colors.surface;
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
@@ -230,8 +232,8 @@ class _CalendarDayCell extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: marked || selected
-                ? const Color(0xFFFD8392)
-                : const Color(0xFFF7C0C9),
+                ? colors.primary
+                : colors.outline.withValues(alpha: 0.35),
           ),
         ),
         child: Stack(
@@ -241,7 +243,7 @@ class _CalendarDayCell extends StatelessWidget {
               '${date.day}',
               style: TextStyle(
                 fontWeight: FontWeight.w700,
-                color: selected ? Colors.white : const Color(0xFF2D3748),
+                color: selected ? colors.onPrimary : colors.onSurface,
               ),
             ),
             if (hasReminder)
@@ -251,7 +253,7 @@ class _CalendarDayCell extends StatelessWidget {
                   width: 5,
                   height: 5,
                   decoration: BoxDecoration(
-                    color: selected ? Colors.white : const Color(0xFFFD8392),
+                    color: selected ? colors.onPrimary : colors.primary,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -282,6 +284,7 @@ class _SelectedDayPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final marked = state.isMarked(state.selectedDate);
     return Card(
       child: Padding(
@@ -303,20 +306,23 @@ class _SelectedDayPanel extends StatelessWidget {
                 IconButton(
                   onPressed: onToggleMark,
                   icon: Icon(marked ? Icons.favorite : Icons.favorite_border),
-                  color: const Color(0xFFFD8392),
+                  color: colors.primary,
                   tooltip: marked ? 'Desmarcar día' : 'Marcar día',
                 ),
               ],
             ),
             const SizedBox(height: 8),
             if (reminders.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Center(
                   child: Text(
                     'No hay recordatorios para este día.\nPodés guardar algo suave para no olvidarlo.',
                     textAlign: TextAlign.center,
-                    style: TextStyle(color: Color(0xFF718096), height: 1.4),
+                    style: TextStyle(
+                      color: colors.onSurface.withValues(alpha: 0.68),
+                      height: 1.4,
+                    ),
                   ),
                 ),
               )
@@ -324,9 +330,9 @@ class _SelectedDayPanel extends StatelessWidget {
               for (final reminder in reminders)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
-                  leading: const Icon(
+                  leading: Icon(
                     Icons.notifications_none,
-                    color: Color(0xFFFD8392),
+                    color: colors.primary,
                   ),
                   title: Text(reminder.title),
                   subtitle: Text(

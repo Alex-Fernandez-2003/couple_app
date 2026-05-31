@@ -134,7 +134,11 @@ class _TimerTab extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     alarmTone.label,
-                    style: const TextStyle(color: Colors.grey),
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.64),
+                    ),
                   ),
                   const SizedBox(height: 12),
                   Wrap(
@@ -188,9 +192,13 @@ class _TimerTab extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         if (state.sessions.isEmpty)
-          const Text(
+          Text(
             'Cuando completes una sesión, aparecerá aquí como evidencia de tu constancia.',
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.64),
+            ),
           )
         else
           for (final session in state.sessions.take(10))
@@ -377,7 +385,11 @@ class _ProgressGoalCard extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 '$progress/${goal.target} $unit · ${(ratio * 100).round()}%',
-                style: const TextStyle(color: Color(0xFF718096)),
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.68),
+                ),
               ),
             ],
           ),

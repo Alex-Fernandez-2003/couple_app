@@ -38,6 +38,7 @@ class _AudioAttachmentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     final maxSeconds = duration.inSeconds <= 0
         ? 1.0
         : duration.inSeconds.toDouble();
@@ -60,14 +61,20 @@ class _AudioAttachmentTile extends StatelessWidget {
                     attachment.customName ?? _basename(attachment.path),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: colors.onSurface,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     '${_formatDuration(duration)} · ${_formatDateTime(attachment.createdAt)}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colors.onSurface.withValues(alpha: 0.64),
+                    ),
                   ),
                 ],
               ),
@@ -104,9 +111,12 @@ class _AudioAttachmentTile extends StatelessWidget {
                   children: [
                     ReorderableDragStartListener(
                       index: index,
-                      child: const Padding(
-                        padding: EdgeInsets.only(right: 4),
-                        child: Icon(Icons.drag_handle, color: Colors.grey),
+                      child: Padding(
+                        padding: const EdgeInsets.only(right: 4),
+                        child: Icon(
+                          Icons.drag_handle,
+                          color: colors.onSurfaceVariant,
+                        ),
                       ),
                     ),
                     Checkbox(
@@ -152,13 +162,19 @@ class _AudioAttachmentTile extends StatelessWidget {
                     Text(
                       _formatDuration(position),
                       maxLines: 1,
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colors.onSurface.withValues(alpha: 0.64),
+                      ),
                     ),
                     const Spacer(),
                     Text(
                       _formatDuration(duration),
                       maxLines: 1,
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colors.onSurface.withValues(alpha: 0.64),
+                      ),
                     ),
                   ],
                 ),
@@ -196,12 +212,19 @@ class _SmallLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 13, color: Colors.grey),
+        Icon(icon, size: 13, color: colors.onSurface.withValues(alpha: 0.62)),
         const SizedBox(width: 4),
-        Text(text, style: const TextStyle(fontSize: 12, color: Colors.grey)),
+        Text(
+          text,
+          style: TextStyle(
+            fontSize: 12,
+            color: colors.onSurface.withValues(alpha: 0.62),
+          ),
+        ),
       ],
     );
   }

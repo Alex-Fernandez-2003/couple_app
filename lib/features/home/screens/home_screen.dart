@@ -172,7 +172,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
-        foregroundColor: Colors.black87,
+        foregroundColor: Theme.of(context).colorScheme.onSurface,
         actions: [
           IconButton(
             onPressed: () => context.go('/theme-settings'),
@@ -245,7 +245,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: const Color(0xFFFD8392)
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .primary
                                             .withValues(
                                               alpha: isRoomConnected ? 0.3 : 0,
                                             ),
@@ -258,11 +260,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                         Expanded(
                                           child: Text(
                                             customMessage,
-                                            style: const TextStyle(
-                                              fontSize: 28,
-                                              fontWeight: FontWeight.bold,
-                                              color: Color(0xFF2D3748),
-                                            ),
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .headlineMedium
+                                                ?.copyWith(
+                                                  fontSize: 28,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Theme.of(
+                                                    context,
+                                                  ).colorScheme.onSurface,
+                                                ),
                                             textAlign: TextAlign.center,
                                             maxLines: 2,
                                             overflow: TextOverflow.ellipsis,
@@ -274,9 +281,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                           Icon(
                                             Icons.edit,
                                             size: 20,
-                                            color: const Color(
-                                              0xFFFD8392,
-                                            ).withValues(alpha: 0.7),
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .primary
+                                                .withValues(alpha: 0.7),
                                           ),
                                       ],
                                     ),
@@ -354,11 +362,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                                   const SizedBox(height: 8),
                                                   Text(
                                                     message.content,
-                                                    style: const TextStyle(
+                                                    style: TextStyle(
                                                       fontSize: 16,
                                                       fontWeight:
                                                           FontWeight.w500,
-                                                      color: Color(0xFF2D3748),
+                                                      color: Theme.of(
+                                                        context,
+                                                      ).colorScheme.onSurface,
                                                     ),
                                                   ),
                                                 ],
@@ -395,7 +405,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                     title: 'Tareas pendientes',
                                     count: pendingTodos,
                                     icon: Icons.check_circle_outline,
-                                    color: const Color(0xFFFD8392),
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                     onTap: () => context.go('/couple'),
                                   ),
                                   _AnimatedHomeCard(
@@ -403,7 +415,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                     title: 'Compras pendientes',
                                     count: pendingShopping,
                                     icon: Icons.shopping_cart_outlined,
-                                    color: const Color(0xFFFD8392),
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                     onTap: () => context.go('/shopping'),
                                   ),
                                   _AnimatedHomeCard(
@@ -411,7 +425,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                     title: 'Notas guardadas',
                                     count: notesCount,
                                     icon: Icons.note_outlined,
-                                    color: const Color(0xFFFD8392),
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                     onTap: () => context.go('/notes'),
                                   ),
                                   _AnimatedHomeCard(
@@ -419,7 +435,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                     title: 'Recordatorios',
                                     count: calendarCount,
                                     icon: Icons.calendar_month_outlined,
-                                    color: const Color(0xFFFD8392),
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                     onTap: () => context.go('/calendar'),
                                   ),
                                   _AnimatedHomeCard(
@@ -427,7 +445,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                                     title: 'Cajas creadas',
                                     count: boxesCount,
                                     icon: Icons.inventory_2_outlined,
-                                    color: const Color(0xFFFD8392),
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                     onTap: () => context.go('/boxes'),
                                   ),
                                 ],

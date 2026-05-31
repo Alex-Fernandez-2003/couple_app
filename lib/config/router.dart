@@ -152,12 +152,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     roomState?.message.isNotEmpty == true) ...[
                   const SizedBox(height: 24),
                   Card(
-                    color: Colors.red.shade50,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.error.withValues(alpha: 0.10),
                     child: Padding(
                       padding: const EdgeInsets.all(16),
                       child: Text(
                         roomState?.message ?? '',
-                        style: const TextStyle(color: Colors.red),
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
                       ),
                     ),
                   ),
@@ -177,8 +181,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 OutlinedButton(
                   onPressed: () => context.go('/join-room'),
                   style: OutlinedButton.styleFrom(
-                    foregroundColor: const Color(0xFFFD8392),
-                    side: const BorderSide(color: Color(0xFFFD8392)),
+                    foregroundColor: Theme.of(context).colorScheme.primary,
+                    side: BorderSide(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),

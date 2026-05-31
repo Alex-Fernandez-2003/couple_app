@@ -34,7 +34,11 @@ class CoupleListScreenState extends ConsumerState<CoupleListScreen> {
       case RoomStatus.waiting:
         return Text(
           roomState.message,
-          style: const TextStyle(color: Colors.black54),
+          style: TextStyle(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.68),
+          ),
         );
       case RoomStatus.connected:
         return Column(
@@ -45,21 +49,29 @@ class CoupleListScreenState extends ConsumerState<CoupleListScreen> {
               style: const TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 6),
-            const Text(
+            Text(
               'Tu conexión está lista. Comparte el código para que tu persona se una.',
-              style: TextStyle(color: Colors.black54),
+              style: TextStyle(
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.68),
+              ),
             ),
           ],
         );
       case RoomStatus.error:
         return Text(
           roomState.message,
-          style: const TextStyle(color: Colors.red),
+          style: TextStyle(color: Theme.of(context).colorScheme.error),
         );
       case RoomStatus.idle:
-        return const Text(
+        return Text(
           'Crea o únete a una conexión para ver la lista compartida.',
-          style: TextStyle(color: Colors.black54),
+          style: TextStyle(
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.68),
+          ),
         );
     }
   }
@@ -81,7 +93,9 @@ class CoupleListScreenState extends ConsumerState<CoupleListScreen> {
             children: [
               if (offline)
                 Card(
-                  color: Colors.red.shade50,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.error.withValues(alpha: 0.10),
                   margin: EdgeInsets.zero,
                   child: const Padding(
                     padding: EdgeInsets.all(12.0),

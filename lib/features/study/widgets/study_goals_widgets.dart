@@ -115,7 +115,9 @@ class _GoalsTab extends StatelessWidget {
                     goal.topics.isEmpty
                         ? 'Tema libre'
                         : goal.topics.join(' · '),
-                    style: const TextStyle(color: Color(0xFF2D3748)),
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurface,
+                    ),
                   ),
                   if (template != null) ...[
                     const SizedBox(height: 8),
