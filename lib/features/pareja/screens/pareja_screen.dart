@@ -338,6 +338,9 @@ class _ParejaScreenState extends ConsumerState<ParejaScreen> {
         final tasksState = ref.watch(sharedItemsProvider);
         final partnerPhoto = ref.watch(partnerPhotoProvider);
         final isRoomConnected = roomState.status == RoomStatus.connected;
+        final roomDisplayName =
+            (roomState.customMessage ?? roomState.room?.customMessage ?? '')
+                .trim();
 
         return Scaffold(
           appBar: AppBar(
@@ -507,7 +510,9 @@ class _ParejaScreenState extends ConsumerState<ParejaScreen> {
                                       const SizedBox(height: 8),
                                       _InfoRow(
                                         label: 'Nombre del espacio',
-                                        value: roomState.room!.name,
+                                        value: roomDisplayName.isEmpty
+                                            ? 'Nuestro espacio'
+                                            : roomDisplayName,
                                       ),
                                     ] else
                                       Text(
