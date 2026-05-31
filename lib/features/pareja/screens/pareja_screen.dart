@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:couple_app/data/providers.dart';
 import 'package:couple_app/data/models/shared_item.dart';
+import 'package:image_cropper/image_cropper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:go_router/go_router.dart';
@@ -162,22 +163,107 @@ class _ParejaScreenState extends ConsumerState<ParejaScreen> {
     );
   }
 
-  Future<void> _pickPartnerPhoto(BuildContext context, WidgetRef ref) async {
+  Future<void> _changePartnerPhoto(BuildContext context, WidgetRef ref) async {
+    final source = await _showPartnerPhotoSourceSheet(context);
+    if (source == null || !context.mounted) return;
+    await _pickPartnerPhoto(context, ref, source);
+  }
+
+  Future<ImageSource?> _showPartnerPhotoSourceSheet(BuildContext context) {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      showDragHandle: true,
+      builder: (context) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'Foto de perfil',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Elegí una imagen y ajustá el encuadre antes de guardarla.',
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Tomar foto'),
+                onTap: () => Navigator.of(context).pop(ImageSource.camera),
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Elegir de galería'),
+                onTap: () => Navigator.of(context).pop(ImageSource.gallery),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancelar'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickPartnerPhoto(
+    BuildContext context,
+    WidgetRef ref,
+    ImageSource source,
+  ) async {
     try {
       final picked = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1200,
+        source: source,
+        maxWidth: 1600,
+        maxHeight: 1600,
         imageQuality: 85,
       );
       if (picked == null) return;
 
+      final cropped = await ImageCropper().cropImage(
+        sourcePath: picked.path,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        compressFormat: ImageCompressFormat.jpg,
+        compressQuality: 88,
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Ajustar foto',
+            toolbarColor: const Color(0xFFFD8392),
+            toolbarWidgetColor: Colors.white,
+            activeControlsWidgetColor: const Color(0xFFFD8392),
+            initAspectRatio: CropAspectRatioPreset.square,
+            lockAspectRatio: true,
+            cropStyle: CropStyle.circle,
+            aspectRatioPresets: const [CropAspectRatioPreset.square],
+          ),
+          IOSUiSettings(
+            title: 'Ajustar foto',
+            doneButtonTitle: 'Guardar',
+            cancelButtonTitle: 'Cancelar',
+            aspectRatioLockEnabled: true,
+            resetAspectRatioEnabled: false,
+            cropStyle: CropStyle.circle,
+            aspectRatioPresets: const [CropAspectRatioPreset.square],
+          ),
+        ],
+      );
+      if (cropped == null) return;
+
       final appDirectory = await getApplicationDocumentsDirectory();
-      final extension = picked.path.split('.').last.toLowerCase();
-      final safeExtension = extension.isEmpty ? 'jpg' : extension;
       final fileName =
-          'partner_photo_${DateTime.now().millisecondsSinceEpoch}.$safeExtension';
+          'partner_photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
       final savedFile = File('${appDirectory.path}/$fileName');
-      await File(picked.path).copy(savedFile.path);
+      await File(cropped.path).copy(savedFile.path);
 
       final oldPath = ref.read(partnerPhotoProvider).value;
       await ref
@@ -327,7 +413,7 @@ class _ParejaScreenState extends ConsumerState<ParejaScreen> {
                                     _PartnerPhotoAvatar(
                                       photoPath: partnerPhoto.value,
                                       onChangePhoto: () =>
-                                          _pickPartnerPhoto(context, ref),
+                                          _changePartnerPhoto(context, ref),
                                     ),
                                     const SizedBox(height: 12),
                                     if (isRoomConnected &&
@@ -368,7 +454,7 @@ class _ParejaScreenState extends ConsumerState<ParejaScreen> {
                                       children: [
                                         OutlinedButton.icon(
                                           onPressed: () =>
-                                              _pickPartnerPhoto(context, ref),
+                                              _changePartnerPhoto(context, ref),
                                           icon: const Icon(Icons.photo_camera),
                                           label: Text(
                                             partnerPhoto.value == null

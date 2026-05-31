@@ -28,6 +28,8 @@
 	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Selecciona una foto para personalizar tu pantalla de pareja.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Toma una foto para personalizar tu pantalla de pareja.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Graba audios para guardarlos localmente en tus notas.</string>
 	<key>UIApplicationSceneManifest</key>
